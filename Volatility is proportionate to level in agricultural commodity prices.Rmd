@@ -1,0 +1,735 @@
+---
+title: |
+  On the Scaling of Volatility with Level in Agricultural Commodity Prices and Yields
+type: ARTICLE TEMPLATE
+author:
+  - name: Benjamin Schiek
+    affil: a, \dagger
+affiliation:
+  - num: a
+    address: |
+      Alliance of Bioversity International and CIAT, Km 17 Recta Cali-Palmira, Valle del Cauca, Colombia, CP 763537
+bibliography: interactcadsample.bib
+appendix: appendix.tex
+abstract: |
+  This note documents a strong positive relationship between average prices and price volatility across agricultural commodities using long-run FAO data. The pattern is robust and suggests a simple scaling relationship between level and volatility. We then provide a brief theoretical argument showing that an analogous scaling between yield level and volatility is consistent with basic homogeneity properties of production technology, under which sensitivity to shocks increases with output. The results highlight the importance of scale in shaping volatility and have implications for how risk is conceptualized in agricultural production.
+keywords: |
+  Sections; lists; figures; tables; mathematics; fonts; references; appendices
+header-includes: |
+  \usepackage{hyperref}
+  \usepackage[utf8]{inputenc}
+  \def\tightlist{}
+output: rticles::tf_article
+---
+
+# Introduction
+
+Modern conventional agricultural research for development (AR4D) narratives and agroecological counter-narratives alike agree on the importance of yield stability and price risk in smallholder planting decisions and welfare outcomes []. That is to say, it is generally accepted that the primary objectives of AR4D extend beyond genetic gain and smallholder participation in high value commodity markets to also encompass agrononomic and financial stability. However, little consideration has been given to what extent it is possible to pursue the objectives of higher value and lower risk simultaneously, or whether a risk-reward tradeoff exists, such that the pursuit of more reward (higher yields and price) necessarily entails higher risk (yield and price volatility).
+
+In this note, I present two complementary premises---one empirical and the other theoretical---suggesting that smallholder risk and reward are, indeed, proportional to each other. First, I document a robust empirical regularity across agricultural commodities: price volatility (standard deviation) increases with mean price level, indicating a price risk–reward tradeoff at the commodity level. Second, I present a brief theoretical observation showing that, under the standard assumption of homogeneous production technology, yield sensitivity to input perturbations necessarily scales with yield level.
+
+Taken together, these results suggest that yield and price volatility are not merely exogenous uncertainty, but are structurally inherent to scale itself. AR4D projects aiming to raise yields and increase smallholder participation in high value commodity markets should complement with mechanisms   resilience building 
+
+Strategies to get smallholders to adopt high yielding varieties must complement the technology with resilience building cooperative social mechanisms risk pooling.
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r Fig12, fig.show = "hold", fig.width = 6, fig.height=4, fig.align="center", fig.cap="\\label{fig:riskReward}The log linear relation between the means and standard deviations of (left) world export price, (right top) world farmgate price, and (right bottom) world revenue yield of agricultural commodities. The statistics are taken over all years of available data (over 1961-2024 in the left panel, and over 1991-2018 in the right panel). The right panel includes primary products only (i.e., no processed products), and excludes animal products.", echo = FALSE}
+
+thisFolder <- "D:/OneDrive - CGIAR/Documents 1/CIAT 2/Volatility is proportionate to level in agricultural commodity prices/Data/"
+thisFile <- "Trade_CropsLivestock_E_All_Data.csv"
+thisFilepath <- paste0(thisFolder, thisFile)
+
+dfRaw <- read.csv(thisFilepath, stringsAsFactors = F)
+dfRaw <- dfRaw %>% subset(Element %in% c("Export quantity", "Export value") &
+                            Area == "World" & Unit %in% c("t", "1000 USD")) %>%
+  select(-contains(".")) %>% select(-matches("[NF]$")) %>% rename_with(~ str_remove(., "^Y"))
+
+gathercols <- colnames(dfRaw)[-c(1:4)]
+# df <- dfRaw %>% select(-Unit) %>% gather_("year", "val", gathercols) %>% spread(Element, val) %>%
+#   mutate(price = `Export value` / `Export quantity`)
+
+df <- dfRaw %>%
+  select(-Unit) %>%
+  pivot_longer(cols = all_of(gathercols), names_to = "year", values_to = "val") %>%
+  pivot_wider(names_from = Element, values_from = val) %>%
+  mutate(price = `Export value` / `Export quantity`) %>%
+  filter(is.finite(price)) # filter() automatically drops NAs if you prefer
+# Keep only items with complete time series
+df <- df %>% group_by(Area, Item) %>% mutate(nYrs = length(year))
+#hist(df$nYrs)
+df <- df %>% subset(nYrs == 64)
+
+# Get historical CPI deflator series (Historical CPI-U) from Bureao of Labor Statistics
+#https://www.bls.gov/cpi/tables/supplemental-files/
+# USe "Index Averages" worksheet (the annual avg over months)
+# Note this deflates to 1982-84 dollars. To rebase to 2024 dollars: CPIrebased = cpiSeries / (cpi2024value / 100)
+thisFile <- "historical-cpi-u-202512.xlsx"
+thisFilepath <- paste0(thisFolder, thisFile)
+dfCPI <- readxl::read_excel(thisFilepath, sheet = "Index Averages")
+dfCPI <- dfCPI %>% select(year = 2, avgCPI = 5) %>% slice(-c(1:5))
+dfCPI$avgCPI <- as.numeric(dfCPI$avgCPI)
+# Rebase CPI to more suitable year dollars
+cpi2024 <- dfCPI %>%
+  filter(year == 2024) %>%
+  pull(avgCPI)
+dfCPI$avgCPI <- dfCPI$avgCPI / (cpi2024 / 100)
+
+num_to_plot <- 5
+randomItems <- sample(unique(df$Item), num_to_plot)
+dfPlotLts <- df %>% mutate(lprice = log(price)) %>% subset(Item %in% randomItems)
+gg <- ggplot(dfPlotLts, aes(x = year, y = lprice, color = Item, group = Item))
+gg <- gg + geom_line()
+gg
+
+
+
+
+dfPlot <- df %>% group_by(Item) %>% summarise(mPrice = mean(price),
+                                          sPrice = sd(price)) %>%
+#  subset(mPrice != 0) %>%
+  mutate(lmPrice = log(mPrice), lsPrice = log(sPrice))
+
+gg <- ggplot(dfPlot, aes(x = lsPrice, y = lmPrice))
+gg <- gg + geom_smooth(aes(group = NULL, fill = NULL, shape = NULL), method = lm, se = F)
+gg <- gg + geom_point(alpha = 0.6,
+                      #size = point_size,
+                      color = "black", stroke = 0.5)#,
+
+
+
+
+
+
+
+
+
+
+df_riskReward <- df_worldExP %>% group_by(Item) %>%
+  summarise(`Mean world export price (2017 USD/metric ton)` = mean(`World export price (2017 USD/metric ton)`, na.rm = T),
+            `Stand. dev. world export price (2017 USD/metric ton)` = sd(`World export price (2017 USD/metric ton)`, na.rm = T),
+            `Mean Export Qty.` = mean(`Export Quantity`, na.rm = T), 
+            `Mean Export Value (1000 USD)` = mean(`Export Value`, na.rm = T))
+
+df_riskReward$`Mean world export price (2017 USD/metric ton), logged` <-
+  log(df_riskReward$`Mean world export price (2017 USD/metric ton)`)
+df_riskReward$`Stand. dev. world export price (2017 USD/metric ton), logged` <-
+  log(df_riskReward$`Stand. dev. world export price (2017 USD/metric ton)`)
+#--
+df_riskReward <- df_riskReward[which(!is.na(df_riskReward$`Stand. dev. world export price (2017 USD/metric ton), logged`)), ]
+#nrow(df_riskReward)
+#-----------------------------------------------------------------------------
+# Get product groups
+this_folder <- "C:/Users/bensc/OneDrive/Documents/Data/FAO Data/FAO trade product groupings/"
+file_vec <- list.files(this_folder)
+filepath_vec <- paste0(this_folder, file_vec)
+list_df <- lapply(filepath_vec, read.csv, stringsAsFactors = F)
+for(i in 1:length(list_df)){
+  this_df <- as.data.frame(list_df[[i]])
+  this_df$Group <- gsub("FAO |.csv", "", file_vec[i])
+  this_df <- this_df[, c("Item", "Group")]
+  #this_df <- this_df[!which(duplicated(this_df$Item)), ]
+  list_df[[i]] <- this_df
+}
+
+df_vegOil <- list_df[[1]]
+df_animal <- list_df[[2]]
+df_cereals <- list_df[[3]]
+df_coffee <- list_df[[4]]
+df_FnV <- list_df[[5]]
+df_nonFood <- list_df[[6]]
+df_oilseeds <- list_df[[7]]
+df_pulses <- list_df[[8]]
+df_RnT <- list_df[[9]]
+df_sugar <- list_df[[10]]
+
+ind_rm <- which(df_vegOil$Item %in% c(df_animal$Item, df_nonFood$Item))
+df_vegOil <- df_vegOil[-ind_rm, ]
+df_oil <- rbind(df_oilseeds, df_vegOil)
+df_oil$Group <- "Veg. oils,\noilcrops"
+df_cereals <- as.data.frame(rbind(df_cereals, data.frame(Item  = "Maize, green",
+                                                         Group = "Cereals and preparations")))
+df_starchy <- rbind(df_cereals, df_RnT)
+df_starchy$Group <- "Starchy crops"
+df_sugOther <- rbind(df_coffee, df_nonFood, df_sugar)
+df_sugOther$Group <- "Sugar, other"
+df_nuts <- df_FnV[grep("nut", df_FnV$Item), ]
+df_FnV <- df_FnV[-grep("nut", df_FnV$Item), ]
+df_oilPulseNuts <- rbind(df_pulses, df_nuts, df_oil)
+df_oilPulseNuts$Group <- "Pulses, nuts, oils"
+
+ind_rm <- which(df_FnV$Item %in% c(df_starchy$Item,
+                                   df_sugOther$Item,
+                                   df_oilPulseNuts$Item))
+df_FnV <- df_FnV[-ind_rm, ]
+df_FnV$Group <- "Fruit & Veg."
+# nrow(df_starchy)
+# nrow(df_FnV)
+# nrow(df_sugOther)
+# nrow(df_oilPulseNuts)
+# nrow(df_animal)
+
+
+list_df <- list(df_starchy,
+                df_FnV,
+                df_oilPulseNuts,
+                df_sugOther,
+                df_animal)
+
+df_groups <- as.data.frame(do.call(rbind, list_df))
+
+
+df_groups <- df_groups[which(!duplicated(df_groups$Item)), ]
+#length(unique(df_riskReward$Item))
+# setdiff(df_groups$Item, df_riskReward$Item)
+# setdiff(df_riskReward$Item, df_groups$Item)
+df_riskReward$Item[which(df_riskReward$Item == "Silk raw")] <- "Silk, raw"
+df_riskReward <- merge(df_riskReward, df_groups, by = "Item", all.x = T)
+# unique(df_riskReward$Item[which(is.na(df_riskReward$Group))])
+# unique(df_riskReward$Item[grep("Silk", df_riskReward$Item, ignore.case = T)])
+df_riskReward <- df_riskReward[which(!is.na(df_riskReward$Group)), ]
+#----------------------------------------------------------------------------
+# Fix grouping -- A lot of products ended up in "Sugar, other" category that should go elsewhere. Add cereal cakes, etc. to "Starchy crops" category; add legumes, oilcrop cakes, meal, etc. to "Pulses, nuts, oils"; Etc. for other groups
+u <- df_riskReward$Item
+these_patterns <- "maize|millet|rice|sorghum|wheat|cassava"
+df_riskReward$Group[grep(these_patterns, u, ignore.case = T)] <- "Starchy crops"
+these_patterns <- "linseed|rapeseed|mustard|sesame|sunflower|palm|soybeans|groundnuts|oil"
+df_riskReward$Group[grep(these_patterns, u, ignore.case = T)] <- "Pulses, nuts, oils"
+these_patterns <- c("meat")
+df_riskReward$Group[grep(these_patterns, u, ignore.case = T)] <- "Animal products"
+these_patterns <- "Feed, pulp of fruit|Feed, vegetable products nes"
+df_riskReward$Group[grep(these_patterns, u, ignore.case = T)] <- "Fruit & Veg."
+#----------------------------------------------------------------------------
+df_mod <- df_riskReward[, c("Mean world export price (2017 USD/metric ton), logged", "Stand. dev. world export price (2017 USD/metric ton), logged")]
+#nrow(df_mod)
+row.names(df_mod) <- df_riskReward$Item
+mod <- lm(`Mean world export price (2017 USD/metric ton), logged` ~., df_mod)
+#summary(mod)
+b <- round(mod$coefficients[1], 3)
+m <- round(mod$coefficients[2], 3)
+#---
+# gg <- ggplot(data.frame(Item = row.names(df_mod), yhat = mod$fitted.values,
+#                         resid = mod$residuals),
+#              aes(x = yhat, y = resid, label = Item))
+# gg <- gg + geom_point() + geom_text()
+# gg <- gg + geom_hline(yintercept = c(-1, 1), color = "red")
+# gg
+#---
+ind_outlier <- which(abs(as.numeric(mod$residuals)) >= 0.75)
+excluded_items <- row.names(df_mod)[ind_outlier]
+pct_removed <- 100 * length(ind_outlier) / nrow(df_riskReward)
+row_names <- row.names(df_mod)[-ind_outlier]
+df_mod <- df_mod[-ind_outlier, ]
+row.names(df_mod) <- row_names
+mod <- lm(`Mean world export price (2017 USD/metric ton), logged` ~., df_mod)
+#summary(mod)
+b <- round(mod$coefficients[1], 3)
+m <- round(mod$coefficients[2], 3)
+df_out <- as.data.frame(broom::glance(mod))
+adjR2 <- round(df_out$adj.r.squared, 2)
+N <- df.residual(mod)
+#plot(mod$fitted.values, mod$residuals)
+#----------------------------------------------------------------------------
+#df_riskReward$Item[ind_outlier]
+df_musdExP <- df_riskReward[-ind_outlier, c("Item", "Group", "Mean world export price (2017 USD/metric ton), logged", "Stand. dev. world export price (2017 USD/metric ton), logged",
+                                         "Mean Export Value (1000 USD)")]
+
+df_musdExP$`Mean export value\n(million USD)` <- df_musdExP$`Mean Export Value (1000 USD)` / 1000
+
+labelItems <- c("Maize", "Flour, maize",
+  #"Wheat", "Flour, wheat",
+  #"Starch, cassava",
+                "Coffee, green", "Coffee, roasted", #"Bananas",
+                #"Plantains",
+                #"Sweet potatoes",
+                #"Potatoes",
+                "Cocoa, beans",
+                #"Wool, greasy", 
+                #"Beans, dry",
+                "Silk, raw",
+                #"Apples",
+                "Soybeans", "Oil, soybean", "Rubber, natural", "Rice",
+                "Cocoa, butter")
+#---
+df_plot <- df_musdExP
+#---
+df_plot$label_these <- NA
+u <- df_plot$Item
+df_plot$label_these[which(u %in% labelItems)] <- u[which(u %in% labelItems)]
+#---
+this_subtitle <- paste0("N = ", N, " food and non-food agricultural commodities", "\nAdj. R-squared = ", adjR2, ", Slope = ", m, ", Y intercept = ", b)
+#---
+facet_key <- "x"
+df_plot$Element <- facet_key
+facet_label <- paste("World export price (2017 USD/metric ton)\n",
+                     this_subtitle)
+names(facet_label) <- facet_key
+colnames(df_plot)[3:4] <- c("Logged mean", "Logged stand. dev.")
+#---
+n <- length(unique(df_plot$Group))
+bag_of_colors <- randomcoloR::distinctColorPalette(k = 2 * n)
+color_vec <- sample(bag_of_colors, n)
+#---
+df_plot$Group <- as.factor(df_plot$Group)
+names(color_vec) <- levels(df_plot$Group)
+names(shape_vec) <- levels(df_plot$Group)
+fillScale <- scale_fill_manual(name = "Group", values = color_vec)
+shapeScale <- scale_shape_manual(name = "Group", values = shape_vec)
+#---
+gg <- ggplot(df_plot,
+             aes(x = `Logged stand. dev.`,
+                 y = `Logged mean`,
+                 group = Group, fill = Group,
+                 shape = Group,
+                 #                 size = `Mean export value\n(million USD)`,
+                 label = label_these))
+gg <- gg + geom_smooth(aes(group = NULL, fill = NULL, shape = NULL), method = lm, se = F)
+gg <- gg + geom_point(alpha = 0.6, size = point_size, color = "black", stroke = 0.5)#,
+#fill = "khaki1", pch=21, color="Black")
+#gg <- gg + scale_fill_manual(values = color_vec)
+# gg <- gg + scale_shape_manual(values = shape_vec)
+gg <- gg + shapeScale
+gg <- gg + fillScale
+gg <- gg + geom_text_repel(size = label_size,
+                           point.padding = 1,
+                           box.padding = 1,
+                           nudge_x = 1,
+                           nudge_y = 1)
+gg <- gg + facet_wrap(~Element, labeller = labeller(Element = facet_label))
+#gg <- gg + labs(title = "The ag commodity producer's risk-reward frontier",
+                # subtitle = this_subtitle)
+gg <- gg + guides(fill = guide_legend(nrow = 1, byrow = T, override.aes = list(linetype = 0)),
+                  color = guide_legend(override.aes = list(linetype = 0)))
+gg <- gg + theme(legend.position = "bottom",
+                 legend.spacing.x = unit(0.25, 'cm'),
+                 legend.title = element_blank(),
+                 strip.background = element_rect(fill = "white"),
+                 strip.text = element_text(size = facetTitle_size),
+                 legend.text = element_text(size = legendText_size),
+                 plot.title = element_text(size = title_size),
+                 plot.subtitle = element_text(size = subtitle_size),
+                 axis.title = element_text(size = axisTitle_size),
+                 axis.text = element_text(size = axisText_size))
+gg_newLawExPrice <- gg
+#ggsave("risk reward frontier.pdf")
+#===========================================================================
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+with implications for productivity measurement, varietal choice, and smallholder risk management.
+
+In this note, I present empirical evidence of a tradeoff between participation in high value commodity markets and price volatility. 
+
+higher yields and market exposure, on the one hand, and yield stability and price volatility, on the other. An assessment of the relation
+
+Conventional Green Revolution narratives of agricultural research for development (AR4D) have evolved in the early 21st century to appreciate the importance of yield stability and price risk in smallholder planting decisions and welfare outcomes [Conway, Derek?, AIS]. This evolution brings the conventional narrative into partial alignment with the agroecological counter-narrative [], which is largely premised upon a sharp critique of the conventional narrative's perceived myopic fixation on genetic gain and participation in high value commodity markets. 
+
+
+Conventional Green Revolution narratives of agricultural research for development (AR4D)---traditionally focused on genetic gain and access to high value commodity markets [e.g. Pingali]---have evolved in the early 21st century to appreciate the importance of yield stability and price risk in smallholder planting decisions and welfare outcomes [Conway, Derek?, AIS]. This evolution brings the conventional narrative into partial alignment with agroecological counter-narratives premised upon a longstanding critique of conventional research's perceived myopic fixation on genetic gain []. Both narrative and counter-narrative now agree, in principle, that stability and resilience are important objectives to pursue simultaneously with the pursuit of higher yields and greater participation in high value commodity markets. However, both stop short of assessing the relationship that may exist between these objectives. In particular, they stop short of considering the potential tradeoffs (synergies) that may exist, such that progress towards one objective nullifies (enhances) progress towards the other.
+
+
+
+While the new-found consensus is welcome, narrative and counternarrative alike recognize the importance... However, little ... Or does a tradeoff exist such that progress along one dimension effectively nullifies progress along another? 
+
+narrative, sometimes called the "Doubly Green Revolution" [Conway] [[or the "new agricultural paradigm"?? [Byerlee]]], is in violent agreement with the (otherwise sharply critical) agroecology counternarrative on certain key issues [Altieri, Mockshell, Holly guy]. In particular, the scope of AR4D narratives has expanded beyond genetic gain to include stability (financial and agronomic) and social-ecological resilience [Conway].  However, little consideration has been given to the tradeoffs or synergies that might exist between these dimensions.
+
+Most agricultural development narratives now recognize, at least in principle, the importance of stable farm yield and income in addition to increased output and market value, especially on smallholder farms [AEI, SAI (conway), Mockshell, ]. The 
+
+
+
+
+
+* AEI vs SAI [] ...efforts at synthesis [Jonathan]. Some of the original vision for SAI included the key elements of AEI [Conway]. Farmers risk averse []. While this work draws attention to the importance of other objectives beyond yield, it stops short of assessing the relationship between objectives.    stability and level. In particular, does a relation exist between higher production and farm return volatility? If so, is the relation proportionate or inverse? This is important to know is the relation a tradeoff?
+
+* In this note, I present empirical evidence and a theoretical argument suggesting a risk-reward tradeoff.
+
+
+
+Existing efforts note that stability/resilience is important in addition to the pursuit of genetic gain and into high value commodity markets; but this work stops short of characterizing or formalizing the relationships between these dimensions. To better characterize these relations, here I present empirical evidence of a tradeoff between commodity market risk and reward. I also present a brief theoretical argument indicating yield volatility scales with yield level under the standard assumption of homogenous production technology.
+
+Existing work emphasizes that yield stability and resilience matter alongside genetic gain and market upgrading, particularly for risk-averse smallholders. However, this literature largely stops short of characterizing how volatility scales with level, either empirically in markets or formally in production.
+
+
+
+There is no inherent statistical relationship between the mean and standard deviation of normally distributed variables. The scaling relationship documented here is therefore not a consequence of normality, but an empirical regularity across commodities. Similar mean–variance scaling relationships have been documented in other domains (e.g. Taylor’s law), where they are interpreted as reflecting structural or technological features rather than probabilistic identities.
+
+This note documents a strong positive relationship between average prices and price volatility across agricultural commodities using long-run FAO data.
+
+The purpose of the production-side argument is not to explain price behavior, but to clarify a general point: volatility need not reflect larger shocks, but can arise mechanically from scale-dependent sensitivity.
+
+
+
+
+
+
+
+
+
+In order to assist authors in the process of preparing a manuscript for a journal, the Taylor & Francis '\textsf{Interact}' layout style has been implemented as a \LaTeXe\ class file based on the `article` document class. A \textsc{Bib}\TeX\ bibliography style file and a sample bibliography are also provided in order to assist with the formatting of your references.
+
+Commands that differ from or are provided in addition to standard \LaTeXe\ are described in this document, which is _not_ a substitute for a \LaTeXe\ tutorial.
+
+The `interactcadsample.tex` file can be used as a template for a manuscript by cutting, pasting, inserting and deleting text as appropriate, using the preamble and the \LaTeX\ environments provided (e.g.\ `\begin{abstract}`, `\begin{keywords}`).
+
+## The \textsf{Interact} class file
+
+The `interact` class file preserves the standard \LaTeXe\ interface such that any document that can be produced using `article.cls` can also be produced with minimal alteration using the `interact` class file as described in this document.
+
+If your article is accepted for publication it will be typeset as the journal requires in Minion Pro and/or Myriad Pro. Since most authors will not have these fonts installed, the page make-up is liable to alter slightly with the change of font. Also, the `interact` class file produces only single-column format, which is preferred for peer review and will be converted to two-column format by the typesetter if necessary during preparation of the proofs. Please therefore do not try to match the typeset format exactly, but use the standard \LaTeX\ fonts instead and ignore details such as slightly long lines of text or figures/tables not appearing in exact synchronization with their citations in the text: these details will be dealt with by the typesetter. Similarly, it is unnecessary to spend time addressing warnings in the log file -- if your .tex file compiles to produce a PDF document that correctly shows how you wish your paper to appear, such warnings will not prevent your source files being imported into the typesetter's program.
+
+## Submission of manuscripts prepared using _\LaTeX_
+
+Manuscripts for possible publication should be submitted to the Editors for review as directed in the journal's Instructions for Authors, and in accordance with any technical instructions provided in the journal's ScholarOne Manuscripts or Editorial Manager site. Your \LaTeX\ source file(s), the class file and any graphics files will be required in addition to the final PDF version when final, revised versions of accepted manuscripts are submitted.
+
+Please ensure that any author-defined macros used in your article are gathered together in the preamble of your .tex file, i.e.\ before the `\begin{document}` command. Note that if serious problems are encountered in the coding of a document (missing author-defined macros, for example), the typesetter may resort to rekeying it.
+
+# Using the `interact` class file
+
+For convenience, simply copy the `interact.cls` file into the same directory as your manuscript files (you do not need to install it in your \TeX\ distribution). In order to use the `interact` document class, replace the command `\documentclass{article}` at the beginning of your document with the command `\documentclass{interact}`.
+
+The following document-class options should _not_ be used with the `interact` class file:
+
+* `10pt`, `11pt`, `12pt` -- unavailable;
+* `oneside`, `twoside` -- not necessary, `oneside` is the default;
+* `leqno`, `titlepage` -- should not be used;
+* `twocolumn` -- should not be used;
+* `onecolumn` -- not necessary as it is the default style.
+
+To prepare a manuscript for a journal that is printed in A4 (two column) format, use the `largeformat` document-class option provided by `interact.cls`; otherwise the class file produces pages sized for B5 (single column) format by default. The `geometry` package should not be used to make any further adjustments to the page dimensions.
+
+<!-- If your manuscript has supplementary content you can prepare this using the `suppldata` document-class option, which will suppress the `article history' date. This option must _not_ be used on any primary content. -->
+
+# Additional features of the `interact` class file
+
+## Title, authors' names and affiliations, abstracts and article types
+
+## Abbreviations
+
+A list of abbreviations may be included if required, enclosed within an `abbreviations` environment, i.e.\ `\begin{abbreviations}`\ldots`\end{abbreviations}`, immediately following the `abstract` environment.
+
+
+## Keywords
+
+A list of keywords may be included if required, enclosed within a `keywords` environment, i.e.\ `\begin{keywords}`\ldots`\end{keywords}`. Additional keywords in other languages (preceded by a translation of the word `keywords`) may also be included within the `keywords` environment if required.
+
+
+## Subject classification codes
+
+AMS, JEL or PACS classification codes may be included if required. The `interact` class file provides an `amscode` environment, i.e.\ `\begin{amscode}`\ldots`\end{amscode}`, a `jelcode` environment, i.e.\ `\begin{jelcode}`\ldots`\end{jelcode}`, and a `pacscode` environment, i.e.\ `\begin{pacscode}`\ldots`\end{pacscode}` to assist with this.
+
+
+## Additional footnotes to the title or authors' names
+
+<!-- The `\thanks` command may be used to create additional footnotes to the title or authors' names if required. Footnote symbols for this purpose should be used in the order -->
+<!-- $^\ast$~(coded as `$^\ast$`), $\dagger$~(`$\dagger$`), $\ddagger$~(`$\ddagger$`), $\S$~(`$\S$`), $\P$~(`$\P$`), $\|$~(`$\|$`), -->
+<!-- $\dagger\dagger$~(`$\dagger\dagger$`), $\ddagger\ddagger$~(`$\ddagger\ddagger$`), $\S\S$~(`$\S\S$`), $\P\P$~(`$\P\P$`). -->
+
+Note that any `footnote`s to the main text will automatically be assigned the superscript symbols 1, 2, 3, etc. by the class file.^[If preferred, the `endnotes` package may be used to set the notes at the end of your text, before the bibliography. The symbols will be changed to match the style of the journal if necessary by the typesetter.]
+
+# Embedding R code
+
+## Code chunks
+
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE, out.width='80%'}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+# Some guidelines for using the standard features of \LaTeX
+
+## Sections
+
+The \textsf{Interact} layout style allows for five levels of section heading, all of which are provided in the `interact` class file using the standard \LaTeX\ commands `\section`, `\subsection`, `\subsubsection`, `\paragraph` and `\subparagraph`. Numbering will be automatically generated for all these headings by default.
+
+## Lists
+
+Numbered lists are produced using the `enumerate` environment, which will number each list item with arabic numerals by default. For example,
+
+1. first item
+2. second item
+3. third item
+
+Alternative numbering styles can be achieved by inserting an optional argument in square brackets to each `item`, e.g.\ `\item[(i)] first item`\, to create a list numbered with roman numerals at level one.
+
+Bulleted lists are produced using the `itemize` environment. For example,
+
+* First bulleted item
+* Second bulleted item
+* Third bulleted item
+
+## Figures
+
+```{r pressure-plot, fig.show='hide'}
+plot(pressure)
+```
+
+The `interact` class file will deal with positioning your figures in the same way as standard \LaTeX. It should not normally be necessary to use the optional `[htb]` location specifiers of the `figure` environment in your manuscript; you may, however, find the `[p]` placement option or the `endfloat` package useful if a journal insists on the need to separate figures from the text.
+
+Figure captions appear below the figures themselves, therefore the `\caption` command should appear after the body of the figure. For example, Figure~\ref{sample-figure} with caption and sub-captions is produced using the following commands:
+```
+\begin{figure}
+\centering
+\subfigure[An example of an individual figure sub-caption.]{%
+\resizebox*{5cm}{!}{\includegraphics{path/to/fig}}}\hspace{5pt}
+\subfigure[A slightly shorter sub-caption.]{%
+\resizebox*{5cm}{!}{\includegraphics{path/to/fig}}}
+\caption{Example of a two-part figure with individual sub-captions
+ showing that captions are flush left and justified if greater
+ than one line of text.} \label{sample-figure}
+\end{figure}
+```
+\begin{figure}
+\centering
+\subfigure[An example of an individual figure sub-caption.]{%
+\resizebox*{5cm}{!}{\includegraphics{`r knitr::fig_chunk('pressure-plot', 'pdf')`}}}\hspace{5pt}
+\subfigure[A slightly shorter sub-caption.]{%
+\resizebox*{5cm}{!}{\includegraphics{`r knitr::fig_chunk('pressure-plot', 'pdf')`}}}
+\caption{Example of a two-part figure with individual sub-captions
+ showing that captions are flush left and justified if greater
+ than one line of text.} \label{sample-figure}
+\end{figure}
+
+To ensure that figures are correctly numbered automatically, the `\label` command should be included just after the `\caption` command, or in its argument.
+
+The `\subfigure` command requires `subfigure.sty`, which is called in the preamble of the `interacttfssample.tex` file (to allow your choice of an alternative package if preferred) and included in the \textsf{Interact} \LaTeX\ bundle for convenience. Please supply any additional figure macros used with your article in the preamble of your .tex file.
+
+The source files of any figures will be required when the final, revised version of a manuscript is submitted. Authors should ensure that these are suitable (in terms of lettering size, etc.) for the reductions they envisage.
+
+The `epstopdf` package can be used to incorporate encapsulated PostScript (.eps) illustrations when using PDF\LaTeX, etc. Please provide the original .eps source files rather than the generated PDF images of those illustrations for production purposes.
+
+
+## Tables
+
+The `interact` class file will deal with positioning your tables in the same way as standard \LaTeX. It should not normally be necessary to use the optional `[htb]` location specifiers of the `table` environment in your manuscript; you may, however, find the `[p]` placement option or the `endfloat` package useful if a journal insists on the need to separate tables from the text.
+
+The `tabular` environment can be used as shown to create tables with single horizontal rules at the head, foot and elsewhere as appropriate. The captions appear above the tables in the \textsf{Interact} style, therefore the `\tbl` command should be used before the body of the table. For example, Table~\ref{sample-table} is produced using the following commands:
+\begin{table}
+\tbl{Example of a table showing that its caption is as wide as
+ the table itself and justified.}
+{\begin{tabular}{lcccccc} \toprule
+ & \multicolumn{2}{l}{Type} \\ \cmidrule{2-7}
+ Class & One & Two & Three & Four & Five & Six \\ \midrule
+ Alpha\textsuperscript{a} & A1 & A2 & A3 & A4 & A5 & A6 \\
+ Beta & B2 & B2 & B3 & B4 & B5 & B6 \\
+ Gamma & C2 & C2 & C3 & C4 & C5 & C6 \\ \bottomrule
+\end{tabular}}
+\tabnote{\textsuperscript{a}This footnote shows how to include
+ footnotes to a table if required.}
+\label{sample-table}
+\end{table}
+```
+\begin{table}
+\tbl{Example of a table showing that its caption is as wide as
+ the table itself and justified.}
+{\begin{tabular}{lcccccc} \toprule
+ & \multicolumn{2}{l}{Type} \\ \cmidrule{2-7}
+ Class & One & Two & Three & Four & Five & Six \\ \midrule
+ Alpha\textsuperscript{a} & A1 & A2 & A3 & A4 & A5 & A6 \\
+ Beta & B2 & B2 & B3 & B4 & B5 & B6 \\
+ Gamma & C2 & C2 & C3 & C4 & C5 & C6 \\ \bottomrule
+\end{tabular}}
+\tabnote{\textsuperscript{a}This footnote shows how to include
+ footnotes to a table if required.}
+\label{sample-table}
+\end{table}
+```
+
+To ensure that tables are correctly numbered automatically, the `\label` command should be included just before `\end{table}`.
+
+The `\toprule`, `\midrule`, `\bottomrule` and `\cmidrule` commands are those used by `booktabs.sty`, which is called by the `interact` class file and included in the \textsf{Interact} \LaTeX\ bundle for convenience. Tables produced using the standard commands of the `tabular` environment are also compatible with the `interact` class file.
+
+
+## Landscape pages
+
+If a figure or table is too wide to fit the page it will need to be rotated, along with its caption, through 90$^{\circ}$ anticlockwise. Landscape figures and tables can be produced using the `rotating` package, which is called by the `interact` class file. The following commands (for example) can be used to produce such pages.
+```
+\setcounter{figure}{1}
+\begin{sidewaysfigure}
+\centerline{\epsfbox{figname.eps}}
+\caption{Example landscape figure caption.}
+\label{landfig}
+\end{sidewaysfigure}
+```
+```
+\setcounter{table}{1}
+\begin{sidewaystable}
+ \tbl{Example landscape table caption.}
+  {\begin{tabular}{@{}llllcll}
+    .
+    .
+    .
+  \end{tabular}}\label{landtab}
+\end{sidewaystable}
+```
+Before any such float environment, use the `\setcounter` command as above to fix the numbering of the caption (the value of the counter being the number given to the preceding figure or table). Subsequent captions will then be automatically renumbered accordingly. The `\epsfbox` command requires `epsfig.sty`, which is called by the `interact` class file and is also included in the \textsf{Interact} \LaTeX\ bundle for convenience.
+
+Please note that if the `endfloat` package is used, one or both of the commands
+```
+\DeclareDelayedFloatFlavor{sidewaysfigure}{figure}
+\DeclareDelayedFloatFlavor{sidewaystable}{table}
+```
+will need to be included in the preamble of your .tex file, after the `endfloat` package is loaded, in order to process any landscape figures and/or tables correctly.
+
+
+## Theorem-like structures
+
+A predefined `proof` environment is provided by the `amsthm` package (which is called by the `interact` class file), as follows:
+\begin{proof}
+More recent algorithms for solving the semidefinite programming relaxation are particularly efficient, because they explore the structure of the MAX-CUT problem.
+\end{proof}
+\noindent This was produced by simply typing:
+```
+\begin{proof}
+More recent algorithms for solving the semidefinite programming
+relaxation are particularly efficient, because they explore the
+structure of the MAX-CUT problem.
+\end{proof}
+```
+Other theorem-like environments (theorem, definition, remark, etc.) need to be defined as required, e.g.\ using `\newtheorem{theorem}{Theorem}` in the preamble of your .tex file (see the preamble of `interactcadsample.tex` for more examples). You can define the numbering scheme for these structures however suits your article best. Please note that the format of the text in these environments may be changed if necessary to match the style of individual journals by the typesetter during preparation of the proofs.
+
+
+## Mathematics
+
+### Displayed mathematics
+
+The `interact` class file will set displayed mathematical formulas centred on the page without equation numbers if you use the `displaymath` environment or the equivalent `\[...\]` construction. For example, the equation
+\[
+ \hat{\theta}_{w_i} = \hat{\theta}(s(t,\mathcal{U}_{w_i}))
+\]
+was typeset using the commands
+```
+\[
+ \hat{\theta}_{w_i} = \hat{\theta}(s(t,\mathcal{U}_{w_i}))
+\]
+```
+
+For those of your equations that you wish to be automatically numbered sequentially throughout the text for future reference, use the `equation` environment, e.g.
+\begin{equation}
+ \hat{\theta}_{w_i} = \hat{\theta}(s(t,\mathcal{U}_{w_i}))
+\end{equation}
+was typeset using the commands
+```
+\begin{equation}
+ \hat{\theta}_{w_i} = \hat{\theta}(s(t,\mathcal{U}_{w_i}))
+\end{equation}
+```
+
+Part numbers for sets of equations may be generated using the `subequations` environment, e.g.
+\begin{subequations} \label{subeqnexample}
+\begin{equation}
+     \varepsilon \rho w_{tt}(s,t) = N[w_{s}(s,t),w_{st}(s,t)]_{s},
+     \label{subeqnparta}
+\end{equation}
+\begin{equation}
+     w_{tt}(1,t)+N[w_{s}(1,t),w_{st}(1,t)] = 0,
+     \label{subeqnpartb}
+\end{equation}
+\end{subequations}
+which was typeset using the commands
+```
+\begin{subequations} \label{subeqnexample}
+\begin{equation}
+     \varepsilon \rho w_{tt}(s,t) = N[w_{s}(s,t),w_{st}(s,t)]_{s},
+     \label{subeqnparta}
+\end{equation}
+\begin{equation}
+     w_{tt}(1,t)+N[w_{s}(1,t),w_{st}(1,t)] = 0,   \label{subeqnpartb}
+\end{equation}
+\end{subequations}
+```
+<!-- This is made possible by the `amsmath` package, which is called by the class file. If you put a `\label` just after the `\begin{subequations}` command, references can be made to the collection of equations, i.e.\ `(\ref{subeqnexample})' in the example above. Or, as the example also shows, you can label and refer to each equation individually -- i.e.\ `(\ref{subeqnparta})' and `(\ref{subeqnpartb})'. -->
+
+Displayed mathematics should be given end-of-line punctuation appropriate to the running text sentence of which it forms a part, if required.
+
+### Math fonts
+
+#### Superscripts and subscripts
+Superscripts and subscripts will automatically come out in the correct size in a math environment (i.e.\ enclosed within `\(...\)` or `$...$` commands in running text, or within `\[...\]` or the `equation` environment for displayed equations). Sub/superscripts that are physical variables should be italic, whereas those that are labels should be roman (e.g.\ $C_p$, $T_\mathrm{eff}$). If the subscripts or superscripts need to be other than italic, they must be coded individually.
+
+#### Upright Greek characters and the upright partial derivative sign
+Upright lowercase Greek characters can be obtained by inserting the letter `u` in the control code for the character, e.g.\ `\umu` and `\upi` produce $\umu$ (used, for example, in the symbol for the unit microns -- $\umu\mathrm{m}$) and $\upi$ (the ratio of the circumference of a circle to its diameter). Similarly, the control code for the upright partial derivative $\upartial$ is `\upartial`. Bold lowercase as well as uppercase Greek characters can be obtained by `{\bm \gamma}`, for example, which gives ${\bm \gamma}$, and `{\bm \Gamma}`, which gives ${\bm \Gamma}$.
+
+
+# Acknowledgement(s) {-}
+
+An unnumbered section, e.g.\ `\section*{Acknowledgements}`, may be used for thanks, etc.\ if required and included _in the non-anonymous version_ before any Notes or References.
+
+# Disclosure statement {-}
+
+An unnumbered section, e.g.\ `\section*{Disclosure statement}`, may be used to declare any potential conflict of interest and included _in the non-anonymous version_ before any Notes or References, after any Acknowledgements and before any Funding information.
+
+# Funding {-}
+
+An unnumbered section, e.g.\ `\section*{Funding}`, may be used for grant details, etc.\ if required and included _in the non-anonymous version_ before any Notes or References.
+
+# Notes on contributor(s) {-}
+
+An unnumbered section, e.g.\ `\section*{Notes on contributors}`, may be included _in the non-anonymous version_ if required. A photograph may be added if requested.
+
+# Nomenclature/Notation {-}
+
+An unnumbered section, e.g.\ `\section*{Nomenclature}` (or `\section*{Notation}`), may be included if required, before any Notes or References.
+
+# Notes {-}
+
+An unnumbered `Notes` section may be included before the References (if using the `endnotes` package, use the command `\theendnotes` where the notes are to appear, instead of creating a `\section*`).
+
+# References
+
+## References cited in the text
+
+## The list of references
+
+References should be listed at the end of the main text in alphabetical order by authors' surnames, then chronologically (earliest first). If references have the same author(s), editor(s), etc., arrange by year of publication, with undated works at the end.
+A single-author entry precedes a multi-author entry that begins with the same name.
+If the reference list contains two or more items by the same author(s) in the same year, add a, b, etc. and list them alphabetically by title.
+Successive entries by two or more authors when only the first author is the same are alphabetized by co-authors' surnames.
+If a reference has more than ten named authors, list only the first seven, followed by 'et al.'.
+If a reference has no author or editor, order by title; if a date of publication is impossible to find, use `n.d.' in its place.
+
+The following list shows some sample references prepared in the Taylor & Francis Chicago author-date style.
+
+[@Blair1977; @Alb05]
