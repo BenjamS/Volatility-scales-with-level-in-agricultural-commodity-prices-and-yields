@@ -34,12 +34,27 @@ Strategies to get smallholders to adopt high yielding varieties must complement 
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(patchwork)
+
 knitr::opts_chunk$set(echo = TRUE)
+
+shapeVec <- c(21:25, 4)
+pointSize <- 1.5
+smallPointSize <- 1
+labelSize <- 2.5
+smallLabelSize <- 2
+titleSize <- 8
+subtitleSize <- 7
+legendTextSize <- 7
+axisTextSize <- 6
+axisTitleSize <- 7
+facetTitleSize <- 7
+
 ```
 
 
 
-```{r Fig12, fig.show = "hold", fig.width = 6, fig.height=4, fig.align="center", fig.cap="\\label{fig:riskReward}The log linear relation between the means and standard deviations of (left) world export price, (right top) world farmgate price, and (right bottom) world revenue yield of agricultural commodities. The statistics are taken over all years of available data (over 1961-2024 in the left panel, and over 1991-2018 in the right panel). The right panel includes primary products only (i.e., no processed products), and excludes animal products.", echo = FALSE}
+```{r Fig12, fig.show = "hold", fig.width = 7, fig.height=5, fig.align="center", fig.cap="\\label{fig:riskReward}The log linear relation between the means and standard deviations of (left) world export price, (right top) world farmgate price, and (right bottom) world revenue yield of agricultural commodities. The statistics are taken over all years of available data (over 1961-2024 in the left panel, and over 1991-2018 in the right panel). The right panel includes primary products only (i.e., no processed products), and excludes animal products.", echo = FALSE}
 
 thisFolder <- "D:/OneDrive - CGIAR/Documents 1/CIAT 2/Volatility is proportionate to level in agricultural commodity prices/Data/"
 thisFile <- "Trade_CropsLivestock_E_All_Data.csv"
@@ -74,233 +89,168 @@ thisFilepath <- paste0(thisFolder, thisFile)
 dfCPI <- readxl::read_excel(thisFilepath, sheet = "Index Averages")
 dfCPI <- dfCPI %>% select(year = 2, avgCPI = 5) %>% slice(-c(1:5))
 dfCPI$avgCPI <- as.numeric(dfCPI$avgCPI)
-# Rebase CPI to more suitable year dollars
+# Rebase CPI to more suitable year dollars (default is 1982-84 dollars)
 cpi2024 <- dfCPI %>%
   filter(year == 2024) %>%
   pull(avgCPI)
-dfCPI$avgCPI <- dfCPI$avgCPI / (cpi2024 / 100)
-
+#dfCPI$CPIrebase <- dfCPI$avgCPI / (cpi2024 / 100)
+df <- df %>% merge(dfCPI) %>% mutate(priceReal2024 = price * cpi2024 / avgCPI)
+# Plot a random sample of deflated commodity world export price series
 num_to_plot <- 5
 randomItems <- sample(unique(df$Item), num_to_plot)
-dfPlotLts <- df %>% mutate(lprice = log(price)) %>% subset(Item %in% randomItems)
-gg <- ggplot(dfPlotLts, aes(x = year, y = lprice, color = Item, group = Item))
-gg <- gg + geom_line()
-gg
 
+df$Item[grep("Rice", df$Item)] %>% unique()
 
+plotThese <- c("Wheat", "Rice, milled", "Beans, dry", "Natural Rubber", "Beef and Buffalo Meat, primary", "Sugar Crops Primary")
 
+dfPlotTs <- df %>% mutate(lprice = log(priceReal2024), year = as.integer(year)) %>% subset(Item %in% plotThese)
+gg <- ggplot(dfPlotTs, aes(x = year, y = priceReal2024, color = Item, group = Item))
+gg <- gg + geom_line(lwd = 1)
+gg <- gg + labs(y = "Deflated world export price\n(2024 USD / kg)",
+                title = "Deflated world export price time series\n(1961-2024) for selected commodities")
+gg <- gg + theme_bw()
+gg <- gg + theme(axis.title.y = element_text(size = axisTitleSize),
+                 axis.text = element_text(size = axisTextSize),
+                 legend.text = element_text(size = legendTextSize),
+                 plot.title = element_text(size = titleSize),
+                 axis.title.x = element_blank(),
+                 legend.title = element_blank(),
+                 legend.position = "bottom")
+ggSampleTs <- gg
 
-dfPlot <- df %>% group_by(Item) %>% summarise(mPrice = mean(price),
+#----------------------------------------------------------------------------
+# Moving on to the the risk reward plot
+dfRiskReward <- df %>% group_by(Item) %>% summarise(mPrice = mean(price),
                                           sPrice = sd(price)) %>%
-#  subset(mPrice != 0) %>%
   mutate(lmPrice = log(mPrice), lsPrice = log(sPrice))
 
-gg <- ggplot(dfPlot, aes(x = lsPrice, y = lmPrice))
-gg <- gg + geom_smooth(aes(group = NULL, fill = NULL, shape = NULL), method = lm, se = F)
-gg <- gg + geom_point(alpha = 0.6,
-                      #size = point_size,
-                      color = "black", stroke = 0.5)#,
+dfPlot <- dfRiskReward[-ind_outlier, ] %>% select(Item, lmPrice, lsPrice)
 
+dfPlot <- dfPlot %>%
+  mutate(group = case_when(
+    # 2. Cereals & starchy roots
+    str_detect(Item, regex("Wheat|Rice|Maize|Barley|Oats|Sorghum|Millet|Cereal|Buckwheat|Rye|Grain|Bran|Cassava|Potato|Sweet potatoes|Yams|Roots and Tubers|Starch of|Bread|Pastry|pasta", ignore_case = TRUE)) ~ "Cereals & starchy roots",
 
+    # 3. Fruit & vegetables
+    str_detect(Item, regex("Beet pulp|Mangoes|Cucumber|Pumpkins|Lemons|Lettuce|Vegetable|Cherries|Apples|Bananas|Oranges|Grapes|Citrus|Berries|Onions|Tomatoes|Vegetables|Fruit|Juice|Melons|Mushrooms|Asparagus|Cabbages|Pineapples|Plantains|Garlic|Spinach|Peaches|Pears|Apricots|Raisins|Artichoke|Avocado|Cauliflower|Chillies|Carrot|Currants|Dates|Figs|Cider|Plums|Persimmons|Tangerines|Quinces", ignore_case = TRUE)) ~ "Fruit & vegetables",
 
+    # 4. Pulses, nuts, oils
+    str_detect(Item, regex("Beans|Peas|Lentils|Chick peas|Pulses|Almonds|Cashew|Walnut|Hazelnut|Nuts|Pistachio|Areca|Oil|Soy|Sunflower|Rape|Palm|Coconut|Olive|Linseed|Sesame|Cake of|Groundnut|Mustard|Castor|Margarine|Copra|Karite|seed", ignore_case = TRUE)) ~ "Pulses, nuts, oils",
 
+    # 1. Animal products
+    str_detect(Item, regex("Animal|Dairy|Meat|Bovine|Beef|Pig|Poultry|Sheep|Goat|Milk|Cheese|Butter|Egg|Yoghurt|Whey|Fat of|Honey|Beeswax|Tallow|Ghee|Offal|Lard|Fat|Fatty|Cream|Yoghurt", ignore_case = TRUE)) ~ "Animal products",
 
+    # 5. Sugar & stimulants
+    str_detect(Item, regex("Spice|Hop|Sugar|stimulant|Molasses|Coffee|Tea|Cocoa|Maté|Confectionery|Chocolate|Glucose|Lactose|Alcoholic|Wine|Beer|Beverages|Ethyl alcohol|Cinnamon|Cloves|Ginger|Nutmeg|Malt|Pepper|Vanilla", ignore_case = TRUE)) ~ "Sugar, spices, stimulants",
 
+    # 6. Industrial/non-food
+    str_detect(Item, regex("Pellets|Cotton|Wool|Silk|Rubber|Tobacco|Hides|Skins|Abaca|Jute|Coir|Flax|Cigarettes|Cigars|Straw|Hair|Waste|Residues|wax|feed|Hay|forage|materials|Textile|Fibre|cat food", ignore_case = TRUE)) ~ "Industrial/feed/non-food",
 
+    # Default for miscellaneous prep or missed items
+    TRUE ~ "Other"
+  ))
 
+# dfPlot <- dfPlot %>%
+#   mutate(group = case_when(
+#     str_detect(Item, "Meat|Beef|Pig|Chicken|Cheese|Milk|Egg|Butter") ~ "Livestock & Dairy",
+#     str_detect(Item, "Oil|Fat|Seed|Cake of|Sunflower|Margarine") ~ "Oils & Oilseeds",
+#     str_detect(Item, "Cotton|Wool|Silk|Rubber|Tobacco|Hides|Abaca|Jute") ~ "Industrial & Raw",
+#     str_detect(Item, "Wine|Beer|Beverages|Feed|Bread|Cereal prep|Food prep") ~ "Processed & Feed",
+#     TRUE ~ "Crops & Plant-Based" # Default for fruits, veg, and grains
+#   ))
 
-
-df_riskReward <- df_worldExP %>% group_by(Item) %>%
-  summarise(`Mean world export price (2017 USD/metric ton)` = mean(`World export price (2017 USD/metric ton)`, na.rm = T),
-            `Stand. dev. world export price (2017 USD/metric ton)` = sd(`World export price (2017 USD/metric ton)`, na.rm = T),
-            `Mean Export Qty.` = mean(`Export Quantity`, na.rm = T), 
-            `Mean Export Value (1000 USD)` = mean(`Export Value`, na.rm = T))
-
-df_riskReward$`Mean world export price (2017 USD/metric ton), logged` <-
-  log(df_riskReward$`Mean world export price (2017 USD/metric ton)`)
-df_riskReward$`Stand. dev. world export price (2017 USD/metric ton), logged` <-
-  log(df_riskReward$`Stand. dev. world export price (2017 USD/metric ton)`)
-#--
-df_riskReward <- df_riskReward[which(!is.na(df_riskReward$`Stand. dev. world export price (2017 USD/metric ton), logged`)), ]
-#nrow(df_riskReward)
-#-----------------------------------------------------------------------------
-# Get product groups
-this_folder <- "C:/Users/bensc/OneDrive/Documents/Data/FAO Data/FAO trade product groupings/"
-file_vec <- list.files(this_folder)
-filepath_vec <- paste0(this_folder, file_vec)
-list_df <- lapply(filepath_vec, read.csv, stringsAsFactors = F)
-for(i in 1:length(list_df)){
-  this_df <- as.data.frame(list_df[[i]])
-  this_df$Group <- gsub("FAO |.csv", "", file_vec[i])
-  this_df <- this_df[, c("Item", "Group")]
-  #this_df <- this_df[!which(duplicated(this_df$Item)), ]
-  list_df[[i]] <- this_df
-}
-
-df_vegOil <- list_df[[1]]
-df_animal <- list_df[[2]]
-df_cereals <- list_df[[3]]
-df_coffee <- list_df[[4]]
-df_FnV <- list_df[[5]]
-df_nonFood <- list_df[[6]]
-df_oilseeds <- list_df[[7]]
-df_pulses <- list_df[[8]]
-df_RnT <- list_df[[9]]
-df_sugar <- list_df[[10]]
-
-ind_rm <- which(df_vegOil$Item %in% c(df_animal$Item, df_nonFood$Item))
-df_vegOil <- df_vegOil[-ind_rm, ]
-df_oil <- rbind(df_oilseeds, df_vegOil)
-df_oil$Group <- "Veg. oils,\noilcrops"
-df_cereals <- as.data.frame(rbind(df_cereals, data.frame(Item  = "Maize, green",
-                                                         Group = "Cereals and preparations")))
-df_starchy <- rbind(df_cereals, df_RnT)
-df_starchy$Group <- "Starchy crops"
-df_sugOther <- rbind(df_coffee, df_nonFood, df_sugar)
-df_sugOther$Group <- "Sugar, other"
-df_nuts <- df_FnV[grep("nut", df_FnV$Item), ]
-df_FnV <- df_FnV[-grep("nut", df_FnV$Item), ]
-df_oilPulseNuts <- rbind(df_pulses, df_nuts, df_oil)
-df_oilPulseNuts$Group <- "Pulses, nuts, oils"
-
-ind_rm <- which(df_FnV$Item %in% c(df_starchy$Item,
-                                   df_sugOther$Item,
-                                   df_oilPulseNuts$Item))
-df_FnV <- df_FnV[-ind_rm, ]
-df_FnV$Group <- "Fruit & Veg."
-# nrow(df_starchy)
-# nrow(df_FnV)
-# nrow(df_sugOther)
-# nrow(df_oilPulseNuts)
-# nrow(df_animal)
-
-
-list_df <- list(df_starchy,
-                df_FnV,
-                df_oilPulseNuts,
-                df_sugOther,
-                df_animal)
-
-df_groups <- as.data.frame(do.call(rbind, list_df))
-
-
-df_groups <- df_groups[which(!duplicated(df_groups$Item)), ]
-#length(unique(df_riskReward$Item))
-# setdiff(df_groups$Item, df_riskReward$Item)
-# setdiff(df_riskReward$Item, df_groups$Item)
-df_riskReward$Item[which(df_riskReward$Item == "Silk raw")] <- "Silk, raw"
-df_riskReward <- merge(df_riskReward, df_groups, by = "Item", all.x = T)
-# unique(df_riskReward$Item[which(is.na(df_riskReward$Group))])
-# unique(df_riskReward$Item[grep("Silk", df_riskReward$Item, ignore.case = T)])
-df_riskReward <- df_riskReward[which(!is.na(df_riskReward$Group)), ]
+dfPlot <- dfPlot %>% subset(group != "Other" & Item != "Crude Materials nes")
 #----------------------------------------------------------------------------
-# Fix grouping -- A lot of products ended up in "Sugar, other" category that should go elsewhere. Add cereal cakes, etc. to "Starchy crops" category; add legumes, oilcrop cakes, meal, etc. to "Pulses, nuts, oils"; Etc. for other groups
-u <- df_riskReward$Item
-these_patterns <- "maize|millet|rice|sorghum|wheat|cassava"
-df_riskReward$Group[grep(these_patterns, u, ignore.case = T)] <- "Starchy crops"
-these_patterns <- "linseed|rapeseed|mustard|sesame|sunflower|palm|soybeans|groundnuts|oil"
-df_riskReward$Group[grep(these_patterns, u, ignore.case = T)] <- "Pulses, nuts, oils"
-these_patterns <- c("meat")
-df_riskReward$Group[grep(these_patterns, u, ignore.case = T)] <- "Animal products"
-these_patterns <- "Feed, pulp of fruit|Feed, vegetable products nes"
-df_riskReward$Group[grep(these_patterns, u, ignore.case = T)] <- "Fruit & Veg."
-#----------------------------------------------------------------------------
-df_mod <- df_riskReward[, c("Mean world export price (2017 USD/metric ton), logged", "Stand. dev. world export price (2017 USD/metric ton), logged")]
-#nrow(df_mod)
-row.names(df_mod) <- df_riskReward$Item
-mod <- lm(`Mean world export price (2017 USD/metric ton), logged` ~., df_mod)
+# Get slope and intercept of the risk reward relationship
+dfMod <- dfRiskReward %>% select(lmPrice, lsPrice)
+row.names(dfMod) <- dfRiskReward$Item
+mod <- lm(lmPrice ~., dfMod)
 #summary(mod)
 b <- round(mod$coefficients[1], 3)
 m <- round(mod$coefficients[2], 3)
+#plot(mod$fitted.values, mod$residuals)
 #---
-# gg <- ggplot(data.frame(Item = row.names(df_mod), yhat = mod$fitted.values,
+# gg <- ggplot(data.frame(Item = row.names(dfMod), yhat = mod$fitted.values,
 #                         resid = mod$residuals),
 #              aes(x = yhat, y = resid, label = Item))
 # gg <- gg + geom_point() + geom_text()
 # gg <- gg + geom_hline(yintercept = c(-1, 1), color = "red")
-# gg
 #---
 ind_outlier <- which(abs(as.numeric(mod$residuals)) >= 0.75)
-excluded_items <- row.names(df_mod)[ind_outlier]
-pct_removed <- 100 * length(ind_outlier) / nrow(df_riskReward)
-row_names <- row.names(df_mod)[-ind_outlier]
-df_mod <- df_mod[-ind_outlier, ]
-row.names(df_mod) <- row_names
-mod <- lm(`Mean world export price (2017 USD/metric ton), logged` ~., df_mod)
+excluded_items <- row.names(dfMod)[ind_outlier]
+pct_removed <- 100 * length(ind_outlier) / nrow(dfRiskReward)
+row_names <- row.names(dfMod)[-ind_outlier]
+dfMod <- dfMod[-ind_outlier, ]
+row.names(dfMod) <- row_names
+mod <- lm(lmPrice ~., dfMod)
 #summary(mod)
 b <- round(mod$coefficients[1], 3)
 m <- round(mod$coefficients[2], 3)
-df_out <- as.data.frame(broom::glance(mod))
-adjR2 <- round(df_out$adj.r.squared, 2)
+dfOut <- as.data.frame(broom::glance(mod))
+adjR2 <- round(dfOut$adj.r.squared, 2)
 N <- df.residual(mod)
 #plot(mod$fitted.values, mod$residuals)
 #----------------------------------------------------------------------------
-#df_riskReward$Item[ind_outlier]
-df_musdExP <- df_riskReward[-ind_outlier, c("Item", "Group", "Mean world export price (2017 USD/metric ton), logged", "Stand. dev. world export price (2017 USD/metric ton), logged",
-                                         "Mean Export Value (1000 USD)")]
-
-df_musdExP$`Mean export value\n(million USD)` <- df_musdExP$`Mean Export Value (1000 USD)` / 1000
-
-labelItems <- c("Maize", "Flour, maize",
+#dfPlot$Item[grep("cocoa", dfPlot$Item, ignore.case = T)]
+labelItems <- c("Maize", "Flour of maize",
   #"Wheat", "Flour, wheat",
   #"Starch, cassava",
-                "Coffee, green", "Coffee, roasted", #"Bananas",
+                "Coffee, green", "Coffee, decaffeinated or roasted", #"Bananas",
                 #"Plantains",
                 #"Sweet potatoes",
                 #"Potatoes",
-                "Cocoa, beans",
+                "Cocoa beans",
                 #"Wool, greasy", 
                 #"Beans, dry",
-                "Silk, raw",
+                "Raw silk (not thrown)",
                 #"Apples",
-                "Soybeans", "Oil, soybean", "Rubber, natural", "Rice",
-                "Cocoa, butter")
+  "Vanilla, raw",
+                "Soya beans", "Soya bean oil", "Natural rubber", "Rice",
+                "Cocoa butter, fat and oil")
 #---
-df_plot <- df_musdExP
+dfPlot$labelThese <- NA
+u <- dfPlot$Item
+dfPlot$labelThese[which(u %in% labelItems)] <- u[which(u %in% labelItems)]
 #---
-df_plot$label_these <- NA
-u <- df_plot$Item
-df_plot$label_these[which(u %in% labelItems)] <- u[which(u %in% labelItems)]
+thisSubtitle <- paste0("N = ", N, " food and non-food agricultural commodities", "\nAdj. R-squared = ", adjR2, ", Slope = ", m, ", Y intercept = ", b)
 #---
-this_subtitle <- paste0("N = ", N, " food and non-food agricultural commodities", "\nAdj. R-squared = ", adjR2, ", Slope = ", m, ", Y intercept = ", b)
+facetKey <- "x"
+dfPlot$Element <- facetKey
+facetLabel <- paste("Deflated world export price (2024 USD/kg)\n",
+                     thisSubtitle)
+names(facetLabel) <- facetKey
+colnames(dfPlot)[2:3] <- c("Logged mean", "Logged stand. dev.")
 #---
-facet_key <- "x"
-df_plot$Element <- facet_key
-facet_label <- paste("World export price (2017 USD/metric ton)\n",
-                     this_subtitle)
-names(facet_label) <- facet_key
-colnames(df_plot)[3:4] <- c("Logged mean", "Logged stand. dev.")
-#---
-n <- length(unique(df_plot$Group))
+n <- length(unique(dfPlot$group))
 bag_of_colors <- randomcoloR::distinctColorPalette(k = 2 * n)
-color_vec <- sample(bag_of_colors, n)
+colorVec <- sample(bag_of_colors, n)
 #---
-df_plot$Group <- as.factor(df_plot$Group)
-names(color_vec) <- levels(df_plot$Group)
-names(shape_vec) <- levels(df_plot$Group)
-fillScale <- scale_fill_manual(name = "Group", values = color_vec)
-shapeScale <- scale_shape_manual(name = "Group", values = shape_vec)
+dfPlot$group <- as.factor(dfPlot$group)
+names(colorVec) <- levels(dfPlot$group)
+names(shapeVec) <- levels(dfPlot$group)
+fillScale <- scale_fill_manual(name = "group", values = colorVec)
+shapeScale <- scale_shape_manual(name = "group", values = shapeVec)
 #---
-gg <- ggplot(df_plot,
+gg <- ggplot(dfPlot,
              aes(x = `Logged stand. dev.`,
                  y = `Logged mean`,
-                 group = Group, fill = Group,
-                 shape = Group,
+                 group = group, fill = group,
+                 shape = group,
                  #                 size = `Mean export value\n(million USD)`,
-                 label = label_these))
+                 label = labelThese))
 gg <- gg + geom_smooth(aes(group = NULL, fill = NULL, shape = NULL), method = lm, se = F)
-gg <- gg + geom_point(alpha = 0.6, size = point_size, color = "black", stroke = 0.5)#,
+gg <- gg + geom_point(alpha = 0.6, size = pointSize, color = "black", stroke = 0.5)#,
 #fill = "khaki1", pch=21, color="Black")
 #gg <- gg + scale_fill_manual(values = color_vec)
 # gg <- gg + scale_shape_manual(values = shape_vec)
 gg <- gg + shapeScale
 gg <- gg + fillScale
-gg <- gg + geom_text_repel(size = label_size,
+gg <- gg + ggrepel::geom_text_repel(size = labelSize,
                            point.padding = 1,
                            box.padding = 1,
                            nudge_x = 1,
                            nudge_y = 1)
-gg <- gg + facet_wrap(~Element, labeller = labeller(Element = facet_label))
+gg <- gg + facet_wrap(~Element, labeller = labeller(Element = facetLabel))
 #gg <- gg + labs(title = "The ag commodity producer's risk-reward frontier",
                 # subtitle = this_subtitle)
 gg <- gg + guides(fill = guide_legend(nrow = 1, byrow = T, override.aes = list(linetype = 0)),
@@ -309,19 +259,22 @@ gg <- gg + theme(legend.position = "bottom",
                  legend.spacing.x = unit(0.25, 'cm'),
                  legend.title = element_blank(),
                  strip.background = element_rect(fill = "white"),
-                 strip.text = element_text(size = facetTitle_size),
-                 legend.text = element_text(size = legendText_size),
-                 plot.title = element_text(size = title_size),
-                 plot.subtitle = element_text(size = subtitle_size),
-                 axis.title = element_text(size = axisTitle_size),
-                 axis.text = element_text(size = axisText_size))
-gg_newLawExPrice <- gg
-#ggsave("risk reward frontier.pdf")
-#===========================================================================
+                 strip.text = element_text(size = facetTitleSize),
+                 legend.text = element_text(size = legendTextSize),
+                 plot.title = element_text(size = titleSize),
+                 plot.subtitle = element_text(size = subtitleSize),
+                 axis.title = element_text(size = axisTitleSize),
+                 axis.text = element_text(size = axisTextSize))
+ggRiskReward <- gg
+
+ggSampleTs + ggRiskReward + plot_layout(widths = c(1/3, 2/3))
 
 ```
 
-
+Only items with a complete series (1961-2024)
+5 outliers remove
+349 commodities
+crop, animal, food, non-food, raw, processed, individual or aggregated
 
 
 
