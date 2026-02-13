@@ -119,8 +119,8 @@ getSlopeEtc <- function(dfRiskReward){
 row.names(dfMod) <- dfRiskReward$Item
 mod <- lm(lmPrice ~., dfMod)
 #summary(mod)
-b <- round(mod$coefficients[1], 3)
-m <- round(mod$coefficients[2], 3)
+b <- round(mod$coefficients[1], 2)
+m <- round(mod$coefficients[2], 2)
 #plot(mod$fitted.values, mod$residuals)
 #---
 # gg <- ggplot(data.frame(Item = row.names(dfMod), yhat = mod$fitted.values,
@@ -147,7 +147,7 @@ return(outVec)
 }
 
 
-plotRiskReward <- function(dfPlot, labelItems, thisTitle, m, b, N, adjR2){
+plotRiskReward <- function(dfPlot, labelItems, thisTitle = NULL, thisXlab = NULL, thisYlab = NULL, m, b, N, adjR2){
   dfPlot$labelThese <- NA
   u <- dfPlot$Item
   dfPlot$labelThese[which(u %in% labelItems)] <- u[which(u %in% labelItems)]
@@ -186,7 +186,7 @@ gg <- gg + ggrepel::geom_text_repel(size = labelSize,
                            box.padding = 1,
                            nudge_x = 1,
                            nudge_y = 1)
-gg <- gg + labs(title = thisTitle)
+gg <- gg + labs(title = thisTitle, x = thisXlab, y = thisYlab)
 #gg <- gg + facet_wrap(~Element, labeller = labeller(Element = facetLabel))
 #gg <- gg + labs(title = "The ag commodity producer's risk-reward frontier",
                 # subtitle = this_subtitle)
@@ -212,16 +212,17 @@ return(gg)
 
 # Introduction
 
-Modern conventional agricultural research for development (AR4D) narratives and agroecological counter-narratives alike agree on the importance of yield stability and price risk in smallholder planting decisions and welfare outcomes []. That is to say, it is generally accepted that the primary objectives of AR4D extend beyond genetic gain and smallholder participation in high value commodity markets to also encompass agrononomic and financial stability. However, little consideration has been given to what extent it is possible to pursue the objectives of higher value and lower risk simultaneously, or whether a risk-reward tradeoff exists, such that the pursuit of more reward (higher yields and price) necessarily entails higher risk (yield and price volatility).
+Modern conventional agricultural research for development (AR4D) narratives and agroecological counter-narratives alike agree on the importance of yield stability and price risk in smallholder planting decisions and welfare outcomes [@conway2007doubly; @altieri2015agroecology]. That is to say, it is generally accepted that the primary objectives of AR4D extend beyond genetic gain and smallholder participation in high value commodity markets to also encompass agrononomic and financial stability. However, little consideration has been given to what extent it is possible to pursue the objectives of higher value and stability simultaneously, or whether a stability-reward tradeoff exists, such that the pursuit of more reward (higher yields and price) necessarily entails higher risk (yield and price volatility).
 
-In this note, I present two complementary premises---one empirical and the other theoretical---suggesting that smallholder risk and reward are, indeed, proportional to each other. First, I document a robust empirical regularity across agricultural commodities: price volatility (standard deviation) increases with mean price level, indicating a price risk–reward tradeoff at the commodity level. Second, I present a brief theoretical observation showing that, under the standard assumption of homogeneous production technology, yield sensitivity to input perturbations necessarily scales with yield level.
+In this note, I present two complementary premises---one empirical and the other theoretical---suggesting that a tradeoff does indeed exist between smallholder value and stability. In other words, smallholder risk and reward are proportional to each other. First, I document a robust empirical regularity across agricultural commodities: higher yielding commodities exhibit higher yield volatility; and higher priced commodities likewise exhibit higher price risk. Second, I present a brief theoretical argument showing that, under the standard assumption of homogeneous production technology, yield sensitivity to input perturbations for any single given commodity necessarily scales with yield level.
+<!-- a cursory but rigorous exploration of this question based on FAO data. The result of the exploration indicates a strong empirical correspondence between yield risk and level, and also between price risk and level.  -->
+<!-- Likewise, the higher a commodity yield volatility is likewise proportionate to yield level, indicating a risk–reward tradeoff at the commodity level. -->
 
 Taken together, these results suggest that yield and price volatility are not merely exogenous uncertainty, but are structurally inherent to scale itself. AR4D projects aiming to raise yields and increase smallholder participation in high value commodity markets should complement with mechanisms   resilience building 
 
 Strategies to get smallholders to adopt high yielding varieties must complement the technology with resilience building cooperative social mechanisms risk pooling.
 
-
-```{r Fig12, fig.show = "hold", fig.width = 6, fig.height=7, fig.align="center", fig.cap="\\label{fig:riskReward}The log linear relation between the means and standard deviations of (left) world export price, (right top) world farmgate price, and (right bottom) world revenue yield of agricultural commodities. The statistics are taken over all years of available data (over 1961-2024 in the left panel, and over 1991-2018 in the right panel). The right panel includes primary products only (i.e., no processed products), and excludes animal products.", echo = FALSE}
+```{r Fig12, fig.show = "hold", fig.width = 6, fig.height=7, fig.align="center", fig.cap="\\label{fig:riskReward}Means plotted against standard deviations of (panel A) world export price, (panel B) world producer kilogram price, (panel C) world producer hectare price, and (panel D) yield, for agricultural commodities, 1961-2024. Export price = Deflated export value / export quantity. Producer kg price = FAO Value of Agricultural Production (VAP) series divided / Production. Producer ha price = VAP series divided by area harvested. All data are downloaded from FAO (FAO 2026). Nominal dollar values are deflated to constant 2014-16 USD using the World Bank Manufacturers Unit Value Index (World Bank 2026).", echo = FALSE}
 
 #============================================================================
 # Export price series
@@ -231,22 +232,38 @@ thisFilepath <- paste0(thisFolder, thisFile)
 theseElements <- c("Export quantity", "Export value")
 theseUnits <- c("t", "1000 USD")
 df <- processDf(thisFilepath, theseElements, theseUnits, isExpPrice = T)
-  # Get historical CPI deflator series (Historical CPI-U) from Bureao of Labor Statistics
-#https://www.bls.gov/cpi/tables/supplemental-files/
-# Use "Index Averages" worksheet (the annual avg over months)
-# Note this deflates to 1982-84 dollars. To rebase to 2024 dollars: CPIrebased = cpiSeries / (cpi2024value / 100)
-thisFile <- "historical-cpi-u-202512.xlsx"
+
+# To deflate historical USD values, FAO uses the WB MUV series.
+# Let's do the same.
+# Available on the "Pink Sheet" (annual) https://www.worldbank.org/en/research/commodity-markets
+thisFile <- "CMO-Historical-Data-Annual.xlsx"
 thisFilepath <- paste0(thisFolder, thisFile)
-dfCPI <- readxl::read_excel(thisFilepath, sheet = "Index Averages")
-dfCPI <- dfCPI %>% select(year = 2, avgCPI = 5) %>% slice(-c(1:5))
-dfCPI$avgCPI <- as.numeric(dfCPI$avgCPI)
-# Rebase CPI to more suitable year dollars (default is 1982-84 dollars)
-# (Rebase to match FAO 2014-2016 constant USD used in VAP data)
-cpiRebaser <- dfCPI %>%
+dfMUV <- readxl::read_xlsx(thisFilepath, sheet = "Annual Indices (Real)")
+dfMUV <- dfMUV %>% select(year = 1, MUV = 18) %>% slice(-c(1:8))
+dfMUV$MUV <- as.numeric(dfMUV$MUV)
+# Rebase MUV to more suitable year dollars (default is 2010 dollars)
+# (Rebase to match FAO 2014-2016 constant USD used in FAO VAP data)
+muvRebaser <- dfMUV %>%
   filter(year %in% c("2014", "2015", "2016")) %>%
-  summarise(cpiRebaser = mean(avgCPI)) %>%
-  pull(cpiRebaser)
-df <- df %>% merge(dfCPI) %>% mutate(priceSeries = price * cpiRebaser / avgCPI)
+  summarise(muvRebaser = mean(MUV)) %>%
+  pull(muvRebaser)
+df <- df %>% merge(dfMUV) %>% mutate(priceSeries = price * muvRebaser / MUV)
+# # Get historical CPI deflator series (Historical CPI-U) from Bureao of Labor Statistics
+# #https://www.bls.gov/cpi/tables/supplemental-files/
+# # Use "Index Averages" worksheet (the annual avg over months)
+# # Note this deflates to 1982-84 dollars. To rebase to 2024 dollars: CPIrebased = cpiSeries / (cpi2024value / 100)
+# thisFile <- "historical-cpi-u-202512.xlsx"
+# thisFilepath <- paste0(thisFolder, thisFile)
+# dfCPI <- readxl::read_excel(thisFilepath, sheet = "Index Averages")
+# dfCPI <- dfCPI %>% select(year = 2, avgCPI = 5) %>% slice(-c(1:5))
+# dfCPI$avgCPI <- as.numeric(dfCPI$avgCPI)
+# # Rebase CPI to more suitable year dollars (default is 1982-84 dollars)
+# # (Rebase to match FAO 2014-2016 constant USD used in VAP data)
+# cpiRebaser <- dfCPI %>%
+#   filter(year %in% c("2014", "2015", "2016")) %>%
+#   summarise(cpiRebaser = mean(avgCPI)) %>%
+#   pull(cpiRebaser)
+# df <- df %>% merge(dfCPI) %>% mutate(priceSeries = price * cpiRebaser / avgCPI)
 #----------------------------------------------------------------------------
 # Check stationarity
 # library(Kendall)
@@ -303,16 +320,16 @@ labelItems <- c("Maize (corn)", "Flour of maize",
                 "Cocoa butter, fat and oil")
 #---
 thisTitle <- "World export real price (2014-16 USD/kg)\nMean and standard deviation over years 1961-2024"
-ggRiskRewardExpPrice <- plotRiskReward(dfRiskReward, labelItems, thisTitle, m, b, N, adjR2)
+thisXlab <- "Ln(mean real price, 1961-2024)"; thisYlab <- "Ln(stand. dev. of differenced real price, 1962-2024)"
+ggRiskRewardExpPrice <- plotRiskReward(dfRiskReward, labelItems, thisTitle, thisXlab, thisYlab, m, b, N, adjR2)
 #============================================================================
 # Farmgate price series
 #============================================================================
 thisFile <- "Production_Crops_Livestock_E_All_Data.csv"
 thisFilepath <- paste0(thisFolder, thisFile)
-theseElements <- c("Production", "Area harvested"); theseUnits <- c("t", "ha")
+theseElements <- c("Production", "Area harvested", "Yield"); theseUnits <- c("t", "ha", "kg/ha")
 dfAreaProd <- processDf(thisFilepath, theseElements, theseUnits, isExpPrice = F) %>%
-  spread(Element, val) %>% select(Item, year, Production, `Area harvested`)
-
+  spread(Element, val) %>% select(Item, year, Production, `Area harvested`, Yield)
 thisFile <- "Value_of_Production_E_All_Data.csv"
 thisFilepath <- paste0(thisFolder, thisFile)
 theseElements <- "Gross Production Value (constant 2014-2016 thousand US$)"; theseUnits <- "1000 USD"
@@ -373,44 +390,166 @@ labelItems <- c("Maize (corn)",
                 "Vanilla, raw",
                 "Soya beans", "Natural rubber in primary forms", "Rice")
 thisTitle <- "World producer real price (2014-16 USD/kg)\nMean and standard deviation over years 1961-2024"
-ggRiskRewardProdKgPrice <- plotRiskReward(dfRiskReward, labelItems, thisTitle, m, b, N, adjR2)
+thisXlab <- "Ln(mean world real producer price/kg, 1961-2024)"; thisYlab <- "Ln(stand. dev. of differenced world real producer price/kg, 1962-2024)"
+ggRiskRewardProdKgPrice <- plotRiskReward(dfRiskReward, labelItems, thisTitle, thisXlab, thisYlab, m, b, N, adjR2)
+#----------------------------------------------------------------------------
+dfYd <- df %>% rename(priceSeries = Yield)
+dfRiskReward <- processRiskRewardDf(dfYd)
+dfRiskReward <- dfRiskReward %>% subset(group != "Other")
+#----------------------------------------------------------------------------
+# Get slope and intercept of the risk reward relationship
+outVec <- getSlopeEtc(dfRiskReward)
+m <- outVec[1]; b <- outVec[2]; adjR2 <- outVec[3]; N <- outVec[4];
+#----------------------------------------------------------------------------
+thisTitle <- "World yield (2014-16 USD/ha)\nMean and standard deviation over years 1961-2024"
+thisXlab <- "Ln(mean yield, 1961-2024)"; thisYlab <- "Ln(stand. dev. of differenced yield, 1962-2024)"
+ggRiskRewardYd <- plotRiskReward(dfRiskReward, labelItems, thisTitle, thisXlab, thisYlab, m, b, N, adjR2)
+#----------------------------------------------------------------------------
 dfHa <- df %>% rename(priceSeries = haPrice)
 dfRiskReward <- processRiskRewardDf(dfHa)
 dfRiskReward <- dfRiskReward %>% subset(group != "Other")
-thisTitle <- "World producer real price (2014-16 USD/ha)\nMean and standard deviation over years 1961-2024"
-ggRiskRewardProdHaPrice <- plotRiskReward(dfRiskReward, labelItems, thisTitle, m, b, N, adjR2)
+#----------------------------------------------------------------------------
+# Get slope and intercept of the risk reward relationship
+outVec <- getSlopeEtc(dfRiskReward)
+m <- outVec[1]; b <- outVec[2]; adjR2 <- outVec[3]; N <- outVec[4];
+#----------------------------------------------------------------------------
+thisTitle <- "World producer real price per hectare (2014-16 USD)\nMean and standard deviation over years 1961-2024"
+thisXlab <- "Ln(mean real price/ha, 1961-2024)"; thisYlab <- "Ln(stand. dev. of differenced real price/ha, 1962-2024)"
+ggRiskRewardProdHaPrice <- plotRiskReward(dfRiskReward, labelItems, thisTitle, thisXlab, thisYlab, m, b, N, adjR2)
+#===============================================================================
+# Put together the 2x2 display of panels
+# 1. Arrange the plots in a 2x2 grid
+# The "/" operator stacks plots vertically, while "|" or "+" aligns them horizontally
+combined_plot <- (ggRiskRewardExpPrice | ggRiskRewardProdKgPrice) / (ggRiskRewardProdHaPrice | ggRiskRewardYd)
+
+# 2. Add labels and a global theme
+combined_plot + 
+  plot_annotation(
+    tag_levels = 'A'#,                      # Use uppercase letters A, B, C, D
+    #title = "Empirical evidence of a reward-stability tradeoff in commodity prices and yields",
+    #subtitle = "Analysis of yield stability vs. initial infection rate",
+    #caption = "Source: Pathogen Model v1.2"
+  ) & 
+  theme(plot.tag = element_text(face = 'bold')) # Apply bold to all tags at once
 
 ```
 
-the analysis is meaningful insofar as these time series are stationary
+# Empirical evidence of an agricultural commodity reward-stability tradeoff
 
-Only items with a complete series (1961-2024)
-5 outliers remove
-349 commodities
+To assess the relationship between agricultural risk and reward, the mean and standard deviation of global yield and price series over 1961-2024 are plotted against each other in logs (Figure \ref{fig:riskReward}). Only commodities with a complete, non-zero time series are included. The comparison of means and standard deviations of time series is meaningful insofar as the series are stationary. The standard deviations in each plot are taken over the first differenced time series to guarantee stationarity. In the price series (panels A-C), dollar values are deflated using the World Bank Manufacturers Unit Value Index [@WB_MUV_2026], such that the means are generally (but not always) stationary. The means of yield series, on the other hand, should be interpreted with great caution, since yield series generally exhibit a trend.
+
+Taylor...
+
+# Theoretical basis for a yield level-stability tradeoff
+
+In the cultivation of any single commodity, there is a fundamental theoretical reason to expect a tradeoff between yield level and yield stability. Under the standard assumption of yield $y$ as a homogeneous function of inputs $\mathbf{x}$, such that, by Euler's theorem,
+
+\begin{equation}
+\sum_{i=1}^n x_i \frac{\partial y}{\partial x_i}
+= h y(\mathbf{x})
+\end{equation}
+
+where $h$ is the degree of homogeneity, or in vector notation,
+
+\begin{equation}
+\mathbf{x}' \nabla y(\mathbf{x})
+= h y(\mathbf{x}).
+\end{equation}
+
+then, differentiating,
+
+\begin{equation}
+\nabla \left( \mathbf{x}' \nabla y \right)
+= \nabla (h y).
+\end{equation}
+
+and applying the product rule,
+
+\begin{equation}
+\nabla y + H(\mathbf{x}) \mathbf{x}
+= h \nabla y,
+\end{equation}
+
+where $H(\mathbf{x})$ is the Hessian matrix.
+
+Rearranging,
+
+\begin{equation}
+H(\mathbf{x}) \mathbf{x}
+= (h - 1)\nabla y.
+\end{equation}
+
+and premultiplying by $\mathbf{x}'$ gives the quadratic form
+
+\begin{equation}
+\mathbf{x}' H(\mathbf{x}) \mathbf{x}
+= (h - 1) \mathbf{x}' \nabla y.
+\end{equation}
+
+Which, invoking Euler’s theorem once more, reduces to
+
+\begin{equation}
+\mathbf{x}' H(\mathbf{x}) \mathbf{x}
+= h(h - 1) y(\mathbf{x}).
+\end{equation}
+
+Thus
+
+\begin{equation}
+\mathbf{x}' H(\mathbf{x}) \mathbf{x}
+\propto y(\mathbf{x}).
+\label{eq:volatPropToLev}
+\end{equation}
+
+The curvature measure $\mathbf{x}' H(\mathbf{x}) \mathbf{x}$ indicates yield sensitivity to small changes in inputs---in other words, the fragility of yield if inputs (like rainfall) are slightly off their optimal values---and may thus be interpreted as a measure of yield volatility. Equation \ref{eq:volatPropToLev} thus indicates that yield level is proportional to yield volatility.
+
+[for decreasing returns to scale]
+
+## Interpretation
+
+The curvature measure:
+
+\begin{equation}
+
+\end{equation}
+
+scales proportionally with yield.
+
+Since the Hessian captures local sensitivity of output to perturbations in inputs, this implies:
+
+> Yield sensitivity (volatility) scales with yield level under homogeneous production.
+
+For decreasing returns:
+
+\begin{equation}
+0 < h < 1 \quad \Rightarrow \quad h(h - 1) < 0.
+\end{equation}
+
+---
+
+## Summary Result
+
+\begin{equation}
+\boxed{
+\mathbf{x}' H(\mathbf{x}) \mathbf{x}
+= h(h - 1) y(\mathbf{x})
+}
+\end{equation}
+
+
+
+
+
+
+
+
+
+
+
+
+Conclusion:
 crop, animal, food, non-food, raw, processed, individual or aggregated
-
-**Fig 11: The higher the price, the more volatile it is.** 'Export price' = Export Value/Export Quantity.
-
-'Farm gate price' equals the FAO Value of Agricultural Production (VAP) series divided by the Production series. 'Revenue yield' equals the FAO VAP series divided by the Area harvested series. The results are converted to constant 2024 dollars using deflation factors provided by Sahr (2021)
-
-&nbsp;
-
-The relation between price level and volatility also appears to persist over a wide range of food price epochs, from the oil crisis of 1973 through to the more recent volatile period beginning in 2007. One notices this also appears to be true for farmgate prices and revenue yields (right panel, Fig \ref{fig:priceSeries}). A plot of the logged means of these series against their respective logged standard deviations in Fig \ref{fig:riskReward} confirms a tight correspondence between expected value and volatility. (See S2 and S3 Tables for details on the commodity grouping in this plot.)
-
-**Fig 12: The log linear relation between the means and standard deviations of (left) world export price, (right top) world farmgate price, and (right bottom) world revenue yield of agricultural commodities.** The statistics are taken over all years of available data (over 1961-2018 in the left panel, and over 1991-2018 in the right panel). The right panel includes primary products only (i.e., no processed products), and excludes animal products.
-
-&nbsp;
-
-The wide range of products that conform to this rule, including food, non-food, raw, and processed products, suggests that the relation may hold for non-agricultural commodity price series as well. However, non-agricultural price data generally do not extend back as far as the FAO data examined here, and so this will be difficult to verify on an equal footing.
-
-It may be that log linear relations between the means and standard deviations exist for other variables. When hunting for such empirical laws, care must be taken to detrend the variables prior to calculation of statistics in order to avoid spurious correlations. The variables examined here have been detrended via conversion to constant 2017 prices using conversion factors provided by Sahr [-@OSUdeflatr].
-
-The slope of the law is about $0.9$ for world export and farmgate prices, indicating that expected price increases by about $0.9\%$ for every $1\%$ increase in risk. The slope of the law for revenue yield is $0.96\%$, indicating an increase in expected revenue yield of $0.96\%$ for every $1\%$ increase in risk. That the slopes of these laws are slightly below, rather than slightly above, unity is economically significant and agrees with intuition. It means that expected reward increases less than proportionately with risk. If the slope were above unity, then risk would in some sense become a commodity more valuable than return. Traders at the Chicago Mercantile Exchange would seek to maximize, rather than minimize, risk.
-
-
-
-
-
+smallholder risk mitigation, AIS [@sandlin2014agricultural]
 
 
 

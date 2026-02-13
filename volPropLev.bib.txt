@@ -1,0 +1,52 @@
+@misc{WB_MUV_2026,
+  author = {{World Bank}},
+  title = {Commodity Markets Outlook: Pink Sheet Data},
+  year = {2026},
+  url = {https://www.worldbank.org/en/research/commodity-markets},
+  note = {Manufactures Unit Value (MUV) Index, accessed 13 February 2026},
+  howpublished = {World Bank Group, Washington, DC}
+}
+@article{conway2007doubly,
+  title={A doubly green revolution: ecology and food production},
+  author={Conway, Gordon},
+  journal={Theoretical ecology: principles and applications},
+  pages={158--171},
+  year={2007},
+  publisher={Oxford University Press Oxford}
+}
+@article{altieri2015agroecology,
+  title={Agroecology and the design of climate change-resilient farming systems},
+  author={Altieri, Miguel A and Nicholls, Clara I and Henao, Alejandro and Lana, Marcos A},
+  journal={Agronomy for sustainable development},
+  volume={35},
+  number={3},
+  pages={869--890},
+  year={2015}
+}
+@article{klerkx2010adaptive,
+  title={Adaptive management in agricultural innovation systems: The interactions between innovation networks and their environment},
+  author={Klerkx, Laurens and Aarts, Noelle and Leeuwis, Cees},
+  journal={Agricultural systems},
+  volume={103},
+  number={6},
+  pages={390--400},
+  year={2010},
+  publisher={Elsevier}
+}
+@article{sandlin2014agricultural,
+  title={Agricultural Innovation Systems: An Investment Sourcebook},
+  author={Sandlin, M'Randa R and Wynn, J Thomas},
+  journal={Journal of International Agricultural and Extension Education},
+  volume={21},
+  number={3},
+  pages={63--65},
+  year={2014},
+  publisher={Association for International Agricultural and Extension Education}
+}
+@misc{FAOSTAT2026,
+  author       = {{Food and Agriculture Organization of the United Nations}},
+  title        = {{FAOSTAT} Statistical Database},
+  year         = {2026},
+  url          = {https://www.fao.org/faostat/en/#data},
+  note         = {Accessed: 2026-02-13. Data retrieved from domains: Production (QCL), Value of Agricultural Production (QV), and Trade (TCL).}
+}
