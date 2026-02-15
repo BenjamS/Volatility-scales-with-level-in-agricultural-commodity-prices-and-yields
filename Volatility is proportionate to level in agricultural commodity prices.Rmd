@@ -9,10 +9,9 @@ affiliation:
   - num: a
     address: |
       Alliance of Bioversity International and CIAT, Km 17 Recta Cali-Palmira, Valle del Cauca, Colombia, CP 763537
-bibliography: interactcadsample.bib
-appendix: appendix.tex
+bibliography: volPropLev.bib
 abstract: |
-  This note documents a strong positive relationship between average prices and price volatility across agricultural commodities using long-run FAO data. The pattern is robust and suggests a simple scaling relationship between level and volatility. We then provide a brief theoretical argument showing that an analogous scaling between yield level and volatility is consistent with basic homogeneity properties of production technology, under which sensitivity to shocks increases with output. The results highlight the importance of scale in shaping volatility and have implications for how risk is conceptualized in agricultural production.
+  This note documents a systematic positive association between price level and volatility across agricultural commodities using long-run FAO data. A complementary theoretical result shows that homogeneous production technology implies proportional scaling between yield level and input sensitivity. The findings highlight the role of scale in shaping agricultural variability.
 keywords: |
   Sections; lists; figures; tables; mathematics; fonts; references; appendices
 header-includes: |
@@ -209,6 +208,9 @@ return(gg)
 
 
 ```
+
+<!-- This note documents a systematic positive association between average prices and price volatility across agricultural commodities using long-run FAO data. The observed pattern is robust and consistent with a simple scaling regularity linking level and variability. A complementary theoretical result shows that, under standard homogeneity properties of production technology, yield level is intrinsically linked to local input sensitivity. Together, these perspectives highlight the role of scale in shaping agricultural variability. -->
+<!-- This note documents a strong positive relationship between average prices and price volatility across agricultural commodities using long-run FAO data. The pattern is robust and suggests a simple scaling relationship between level and volatility. I then provide a brief theoretical argument showing that an analogous scaling between yield level and volatility is consistent with basic homogeneity properties of production technology, under which sensitivity to shocks increases with output. The results highlight the importance of scale in shaping volatility and have implications for how risk is conceptualized in agricultural production. -->
 
 # Introduction
 
