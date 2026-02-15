@@ -50,3 +50,49 @@
   url          = {https://www.fao.org/faostat/en/#data},
   note         = {Accessed: 2026-02-13. Data retrieved from domains: Production (QCL), Value of Agricultural Production (QV), and Trade (TCL).}
 }
+@article{mockshell2018beyond,
+  title={Beyond the agroecological and sustainable agricultural intensification debate: Is blended sustainability the way forward?},
+  author={Mockshell, Jonathan and Kamanda, Josey},
+  journal={International Journal of Agricultural Sustainability},
+  volume={16},
+  number={2},
+  pages={127--149},
+  year={2018},
+  publisher={Taylor \& Francis}
+}
+@article{cohen2015random,
+  title={Random sampling of skewed distributions implies Taylor’s power law of fluctuation scaling},
+  author={Cohen, Joel E and Xu, Meng},
+  journal={Proceedings of the National Academy of Sciences},
+  volume={112},
+  number={25},
+  pages={7749--7754},
+  year={2015},
+  publisher={National Academy of Sciences}
+}
+@book{taylor2019taylor,
+  title={Taylor's power law: order and pattern in nature},
+  author={Taylor, Robin AJ},
+  year={2019},
+  publisher={Academic Press}
+}
+@article{brown2021taylor,
+  title={Taylor’s law of fluctuation scaling for semivariances and higher moments of heavy-tailed data},
+  author={Brown, Mark and Cohen, Joel E and Tang, Chuan-Fa and Yam, Sheung Chi Phillip},
+  journal={Proceedings of the National Academy of Sciences},
+  volume={118},
+  number={46},
+  pages={e2108031118},
+  year={2021},
+  publisher={National Academy of Sciences}
+}
+@article{eisler2008fluctuation,
+  title={Fluctuation scaling in complex systems: Taylor's law and beyond},
+  author={Eisler, Zolt{\'a}n and Bartos, Imre and Kert{\'e}sz, J{\'a}nos},
+  journal={Advances in Physics},
+  volume={57},
+  number={1},
+  pages={89--142},
+  year={2008},
+  publisher={Taylor \& Francis}
+}
