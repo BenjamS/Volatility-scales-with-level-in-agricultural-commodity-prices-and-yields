@@ -452,13 +452,12 @@ To assess the relationship between agricultural risk and reward, the mean and st
 
 The plots reveal a strong empirical correspondence between level and volatility across a wide range of commodity types, including crop, animal, food, non-food, raw, and processed commodities. The formal economic mechanism behind the regularity, if any exists, does not readily suggest itself. Similar scaling relations have often been observed in other contexts---primarily biological and ecological systems---where they are known as Taylor’s Law or fluctuation scaling [@eisler2008fluctuation]. However, the explanations offered in those contexts are domain specific and do not readily extend to agricultural commodity markets. The search for abstract statistical explanations not rooted in any particular empirical context is an active area of research [@cohen2015random; @brown2021taylor; @taylor2019taylor].
 <!-- Notably, the scaling relation appears consistently across commodities with markedly different biological, technological, and market characteristics. -->
-[-@WB_MUV_2026;]
 
 # Theoretical basis for a yield level-stability tradeoff
 
 At the farm level, it is straightforward to demonstrate a fundamental theoretical reason to expect a tradeoff between yield level and yield stability.
 
-Under the standard assumption that yield $y(x)$ is a homogeneous function of inputs $x$ of degree $h$, Euler’s theorem implies
+Under the standard assumption that yield $y(\mathbf{x})$ is a homogeneous function of inputs $\mathbf{x}$ of degree $h$, Euler’s theorem implies
 
 \begin{equation}
 \sum_{i=1}^n x_i \frac{\partial y}{\partial x_i}
