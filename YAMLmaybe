@@ -1,0 +1,39 @@
+---
+title: "On the Scaling of Volatility with Level in Agricultural Commodity Prices and Yields"
+author:
+  - name: Benjamin Schiek
+    email: b.schiek@cgiar.org
+    affiliation: alliance
+    correspondingauthor: true
+    footnote: 1
+address:
+  - code: alliance
+    organization: Alliance of Bioversity International and CIAT
+    addressline: Km 17 Recta Cali-Palmira
+    city: Cali
+    state: Valle del Cauca
+    postcode: 763537
+    country: Colombia
+footnote:
+  - code: 1
+    text: "Corresponding author."
+abstract: |
+  This note documents a systematic positive association between price level and volatility across agricultural commodities using long-run FAO data. A complementary theoretical result shows that homogeneous production technology implies proportional scaling between yield level and input sensitivity. Together, these observations indicate a smallholder reward-stability tradeoff, underscoring the importance of explicitly accounting for yield and price volatility when formulating smallholder yield- and income-enhancing research policy.
+keywords: 
+  - Agricultural risk
+  - Commodity price volatility
+  - Yield stability
+  - Fluctuation scaling
+  - Smallholder resilience
+journal: "Nature Food" # Or your target Elsevier journal
+date: "2026-02-21"
+linenumbers: false
+numbersections: true
+bibliography: volPropLev.bib
+biblio-style: elsarticle-harv 
+classoption: preprint, 3p, authoryear 
+output: 
+  rticles::elsevier_article:
+    keep_tex: true
+    citation_package: natbib
+---
