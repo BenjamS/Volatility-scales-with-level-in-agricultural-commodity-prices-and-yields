@@ -8,7 +8,7 @@ author:
 affiliation:
   - num: a
     address: |
-      Alliance of Bioversity International and CIAT, Km 17 Recta Cali-Palmira, Valle del Cauca, Colombia, CP 763537
+      Alliance of Bioversity International and CIAT, Km 17 Recta Cali-Palmira, Valle del Cauca, Colombia, CP 763537, b.schiek@cgiar.org
 bibliography: volPropLev.bib
 abstract: |
   This note documents a systematic positive association between price level and volatility across agricultural commodities using long-run FAO data. A complementary theoretical result shows that homogeneous production technology implies proportional scaling between yield level and input sensitivity. Together, these observations indicate a smallholder reward-stability tradeoff, underscoring the importance of explicitly accounting for yield and price volatility when formulating  smallholder yield- and income-enhancing research policy.
@@ -26,7 +26,11 @@ output: rticles::tf_article
 library(tidyverse)
 library(patchwork)
 
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      dev = c("png", "tiff"),
+                      dpi = 300)
 
 # Plot parameters
 shapeVec <- c(21:25, 4)
@@ -148,6 +152,15 @@ return(outVec)
 
 ```
 
+\pagebreak
+
+# Abstract {-}
+
+This note documents a systematic positive association between price level and volatility across agricultural commodities using long-run FAO data. A complementary theoretical result shows that homogeneous production technology implies proportional scaling between yield level and input sensitivity. Together, these observations indicate a smallholder reward-stability tradeoff, underscoring the importance of explicitly accounting for yield and price volatility when formulating  smallholder yield- and income-enhancing research policy.
+
+## Keywords {-}
+
+Agricultural risk; Commodity price volatility; Yield stability; Fluctuation scaling; Smallholder resilience
 
 # Introduction
 
