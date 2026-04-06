@@ -163,19 +163,23 @@ processRiskRewardDf <- function(thisDf){
   dfRiskReward <- thisDf %>% group_by(group, Item) %>% summarise(mlPrice = mean(log(priceSeries)),
                                                           slPrice = sd(log(priceSeries)),
                                                           mPrice = mean(priceSeries),
-                                                          sPrice = sd(diff(priceSeries)[-1])) %>%
-  mutate(lmPrice = log(mPrice), lsPrice = log(sPrice)) %>% select(Item, lmPrice, lsPrice, mlPrice, slPrice, group)
+                                                          sPrice = sd(diff(priceSeries)[-1]),
+                                                          mDifLprice = mean(diff(log(priceSeries))[-1]),
+                                                          sDifLprice = sd(diff(log(priceSeries))[-1])) %>%
+  mutate(lmPrice = log(mPrice), lsPrice = log(sPrice)) %>% select(Item, lmPrice, lsPrice, mlPrice, slPrice,
+                                                                  mDifLprice, sDifLprice, group)
 return(dfRiskReward)
 }
 
 getSlopeEtc <- function(dfRiskReward){
-  dfMod <- dfRiskReward %>% select(lsPrice, lmPrice) %>% as.data.frame()
+  dfMod <- dfRiskReward %>% as.data.frame() %>% select(lsPrice, lmPrice)
 row.names(dfMod) <- dfRiskReward$Item
 mod <- lm(lsPrice ~., dfMod)
 #summary(mod)
 b <- round(mod$coefficients[1], 2)
 m <- round(mod$coefficients[2], 2)
 #plot(mod$fitted.values, mod$residuals)
+#lmtest::bptest(mod)
 #---
 # gg <- ggplot(data.frame(Item = row.names(dfMod), yhat = mod$fitted.values,
 #                         resid = mod$residuals),
@@ -183,13 +187,13 @@ m <- round(mod$coefficients[2], 2)
 # gg <- gg + geom_point() + geom_text()
 # gg <- gg + geom_hline(yintercept = c(-1, 1), color = "red")
 #---
-# ind_outlier <- which(abs(as.numeric(mod$residuals)) >= 0.75)
+# ind_outlier <- which(abs(as.numeric(mod$residuals)) >= 1)
 # excluded_items <- row.names(dfMod)[ind_outlier]
 # pct_removed <- 100 * length(ind_outlier) / nrow(dfRiskReward)
 # row_names <- row.names(dfMod)[-ind_outlier]
 # dfMod <- dfMod[-ind_outlier, ]
 # row.names(dfMod) <- row_names
-# mod <- lm(lmPrice ~., dfMod)
+# mod <- lm(lsPrice ~., dfMod)
 # #summary(mod)
 # b <- round(mod$coefficients[1], 3)
 # m <- round(mod$coefficients[2], 3)
@@ -234,8 +238,7 @@ The report concludes with brief remarks on the domain-independent and domain-spe
 <!-- The note concludes with brief remarks on the implications of these regularities for AR4D policy and research prioritization. -->
 
 
-```{r Fig12, fig.show = "hold", fig.width = 6, fig.height=7, fig.align="center", fig.cap="\\label{fig:riskReward}Log-log plots of standard deviations and means for (A) world export prices, (B) world producer prices per hectare, and (C) world producer prices per kg, 1961–2024, based on FAO data (FAO, 2026). Standard deviations are computed from first-differenced series. Nominal values are deflated to constant 2014–2016 USD using the World Bank MUV Index (World Bank, 2026).", echo = FALSE, warning=FALSE, message=FALSE}
-
+```{r Fig1, fig.show = "hold", fig.width = 6, fig.height=7, fig.align="center", fig.cap="\\label{fig:riskReward}Log-log plots of standard deviations and means for (A) world export prices, (B) world producer prices per hectare, (C) world producer prices per kg, and (D) yield (kg/hectare), 1961–2024, based on FAO data (FAO, 2026). Standard deviations are computed from first-differenced series. Nominal values are deflated to constant 2014–2016 USD using the World Bank MUV Index (World Bank, 2026).", echo = FALSE, warning=FALSE, message=FALSE}
 #============================================================================
 # Export price series
 #============================================================================
@@ -244,7 +247,6 @@ thisFilepath <- paste0(thisFolder, thisFile)
 theseElements <- c("Export quantity", "Export value")
 theseUnits <- c("t", "1000 USD")
 df <- processDf(thisFilepath, theseElements, theseUnits, isExpPrice = T)
-
 # To deflate historical USD values, FAO uses the WB MUV series.
 # Let's do the same.
 # Available on the "Pink Sheet" (annual) https://www.worldbank.org/en/research/commodity-markets
@@ -307,10 +309,12 @@ df <- df %>% merge(dfMUV) %>% mutate(priceSeries = price * muvRebaser / MUV)
 # ggSampleTsExpPrice <- gg
 #----------------------------------------------------------------------------
 dfTest <- df %>% group_by(Item) %>% mutate(shapiro_p = shapiro.test(log(priceSeries))$p.value) %>%
-  ungroup() %>% subset(year == 2024) %>% select(Item, shapiro_p)
+  mutate(stndev = sd(diff(log(priceSeries))[-1])) %>% mutate(m = mean(diff(log(priceSeries))[-1])) %>%
+  ungroup() %>% subset(year == 2024) %>% select(Item, shapiro_p, stndev, m)
 nShapiroExp <- dfTest %>% subset(shapiro_p >= 0.05) %>% nrow
 pctShapExp <- nShapiroExp / nrow(dfTest) * 100
 logNormItems <- dfTest$Item[which(dfTest$shapiro_p >= 0.05)]
+dfTest2 <- dfTest %>% subset(shapiro_p >= 0.05 & abs(stndev / m) < 100)
 #nrow(dfTest)
 #hist(dfTest$shapiro_p, 20)
 #dfTest %>% subset(shapiro_p > 0.05) %>% .$Item
@@ -333,10 +337,12 @@ gg <- df %>%
 # Risk reward plot
 df <- categorizeItems(df)
 dfRiskReward <- processRiskRewardDf(df)
+#plot(dfRiskReward$lmPrice, dfRiskReward$lsPrice)
 #dfRiskReward %>% subset(Item %in% logNormItems) %>% .$slPrice %>% hist(20)
 #hist(dfRiskReward$slPrice, 20)
-dfRiskReward %>% subset(group == "Other") %>% .$Item # "Food preparations n.e.c." "Infant food" "Other food nes"
+#dfRiskReward %>% subset(group == "Other") %>% .$Item # "Food preparations n.e.c." "Infant food" "Other food nes"
 dfRiskReward <- dfRiskReward %>% subset(group != "Other" & Item != "Crude Materials nes")
+dfRRexp <- dfRiskReward; dfRRexp$facetKey <- "A) Export price (constant 2014-16 USD/kg)"
 # Set group colors to be used in all risk reward plots
 n <- length(unique(dfRiskReward$group))
 bag_of_colors <- randomcoloR::distinctColorPalette(k = 2 * n)
@@ -444,25 +450,37 @@ df <- dfAreaProd %>% merge(dfVAP, by = c("Item", "year")) %>%
 #----------------------------------------------------------------------------
 #nrow(df)
 #df %>% group_by(Item) %>% mutate(nYrs = sum(!is.na(kgPrice))) %>% subset(nYrs >60) %>% nrow()
-dfTest <- df %>% group_by(Item) %>% mutate(shapiro_p = shapiro.test(log(kgPrice))$p.value) %>%
+dfTest <- df %>% group_by(Item) %>% mutate(shapiro_p = shapiro.test(scale(log(kgPrice)))$p.value) %>%
   ungroup() %>% subset(year == 2024) %>% select(Item, shapiro_p)
 nShapiroKg <- dfTest %>% subset(shapiro_p >= 0.05) %>% nrow
 pctShapKg <- nShapiroKg / (dfTest %>% nrow) * 100
 logNormItemsKg <- dfTest$Item[which(dfTest$shapiro_p >= 0.05)]
+failedKg <- dfTest$Item[which(dfTest$shapiro_p < 0.05)]
 dfTest <- df %>% group_by(Item) %>% mutate(nYrs = sum(!is.na(haPrice))) %>% subset(nYrs >60) %>% mutate(shapiro_p = shapiro.test(log(haPrice))$p.value) %>%
   ungroup() %>% subset(year == 2024) %>% select(Item, shapiro_p)
 nShapiroHa <- dfTest %>% subset(shapiro_p >= 0.05) %>% nrow
 pctShapHa <- nShapiroHa / (dfTest %>% nrow) * 100
 logNormItemsHa <- dfTest$Item[which(dfTest$shapiro_p >= 0.05)]
-#hist(dfTest$shapiro_p, 20)
-#dfTest %>% subset(shapiro_p > 0.05) %>% .$Item
-#hist(dfTest$shapiro_p)
+failedHa <- dfTest$Item[which(dfTest$shapiro_p < 0.05)]
+thisPriceVec <- df %>% subset(Item == "Roots and Tubers, Total") %>% mutate(lKgPrice = log(kgPrice)) %>% .$lKgPrice
+# # Plot the points
+# qqnorm(thisPriceVec, main = "Q-Q Plot for log price")
+# # Add the reference line (crucial for interpretation!)
+# qqline(thisPriceVec, col = "red")
+# 
+# thisPriceVec <- df %>% subset(Item == "Roots and Tubers, Total") %>% mutate(lHaPrice = log(haPrice)) %>% .$lHaPrice
+# # Plot the points
+# qqnorm(thisPriceVec, main = "Q-Q Plot for log price")
+# # Add the reference line (crucial for interpretation!)
+# qqline(thisPriceVec, col = "red")
 #----------------------------------------------------------------------------
 # Risk reward plot
+df <- categorizeItems(df)
 dfKg <- df %>% rename(priceSeries = kgPrice)
 dfRiskReward <- processRiskRewardDf(dfKg)
 #dfRiskReward %>% subset(group == "Other") %>% .$Item # "Lupins" "Quinoa" "True hemp, raw or retted" "Vetches"  "Yautia"  
 dfRiskReward <- dfRiskReward %>% subset(group != "Other")
+dfRRkg <- dfRiskReward; dfRRkg$facetKey <- "C) Producer price (constant 2014-16 USD/kg)" 
 #----------------------------------------------------------------------------
 # Get slope and intercept of the risk reward relationship
 outVec <- getSlopeEtc(dfRiskReward)
@@ -485,21 +503,24 @@ dfKgPrice$facetKey <- paste0("C) Producer price (constant 2014-16 USD/kg)\n", th
 #                 "Vanilla, raw",
 #                 "Soya beans", "Natural rubber in primary forms", "Rice")
 #----------------------------------------------------------------------------
-# dfYd <- df %>% rename(priceSeries = Yield)
-# dfRiskReward <- processRiskRewardDf(dfYd)
-# dfRiskReward <- dfRiskReward %>% subset(group != "Other")
+dfYd <- df %>% rename(priceSeries = Yield)
+dfRiskReward <- processRiskRewardDf(dfYd)
+dfRiskReward <- dfRiskReward %>% subset(group != "Other")
+dfRRyd <- dfRiskReward; dfRRyd$facetKey <- "D) Yield (kg/ha)"
 # #----------------------------------------------------------------------------
 # # Get slope and intercept of the risk reward relationship
-# outVec <- getSlopeEtc(dfRiskReward)
-# m <- outVec[1]; b <- outVec[2]; adjR2 <- outVec[3]; N <- outVec[4];
-# dfYd <- dfRiskReward
-# thisFacet <- paste0("N = ", N, " agricultural commodities", "\nAdj. R-squared = ", adjR2, ", Slope = ", m, ", Y intercept = ", b)
-# dfYd$facetKey <- paste0("D) Yield (kg/ha)\n", thisFacet)
+outVec <- getSlopeEtc(dfRiskReward)
+m <- outVec[1]; b <- outVec[2]; adjR2 <- outVec[3]; N <- outVec[4];
+dfYd <- dfRiskReward
+thisFacet <- paste0("N = ", N, " agricultural commodities", "\nAdj. R-squared = ", adjR2, ", Slope = ", m, ", Y intercept = ", b)
+dfYd$facetKey <- paste0("D) Yield (kg/ha)\n", thisFacet)
+#plot(dfYd$lmPrice, dfYd$lsPrice)
 #----------------------------------------------------------------------------
 dfHa <- df %>% rename(priceSeries = haPrice)
 dfRiskReward <- processRiskRewardDf(dfHa)
 #dfRiskReward %>% subset(group == "Other") %>% .$Item
 dfRiskReward <- dfRiskReward %>% subset(group != "Other")
+dfRRha <- dfRiskReward; dfRRha$facetKey <- "B) Producer price (constant 2014-16 USD/hectare)"
 #----------------------------------------------------------------------------
 # Get slope and intercept of the risk reward relationship
 outVec <- getSlopeEtc(dfRiskReward)
@@ -508,7 +529,7 @@ dfHaPrice <- dfRiskReward
 thisFacet <- paste0("N = ", N, " agricultural commodities", "\nAdj. R-squared = ", adjR2, ", Slope = ", m, ", Y intercept = ", b)
 dfHaPrice$facetKey <- paste0("B) Producer price (constant 2014-16 USD/hectare)\n", thisFacet)
 #----------------------------------------------------------------------------
-dfPlot2 <- do.call(rbind, list(dfKgPrice, dfHaPrice)) %>% as.data.frame() #, dfYd
+dfPlot2 <- do.call(rbind, list(dfKgPrice, dfHaPrice, dfYd)) %>% as.data.frame()
 dfPlot2$group <- as.factor(dfPlot2$group)
 names(colorVec) <- levels(dfPlot2$group)
 names(shapeVec) <- levels(dfPlot2$group)
@@ -524,7 +545,7 @@ gg <- gg + geom_point(alpha = 0.6, size = pointSize, color = "black", stroke = 0
 gg <- gg + shapeScale
 gg <- gg + fillScale
 gg <- gg + labs(x = "Nat. log of mean", y = "Nat. log of stand. dev.")
-gg <- gg + facet_wrap(~facetKey, nrow = 1, scales = "free")
+gg <- gg + facet_wrap(~facetKey, nrow = 2, scales = "free")
 gg <- gg + theme_bw()
 gg <- gg + theme(axis.title = element_text(size = axisTitleSize),
                  axis.text = element_text(size = axisTextSize),
@@ -534,39 +555,39 @@ gg <- gg + theme(axis.title = element_text(size = axisTitleSize),
                  legend.title = element_blank(),
                  strip.background = element_rect(fill = "white"),
                  strip.text = element_text(hjust = 0, size = axisTitleSize))
-gg <- gg + guides(
-  fill = guide_legend(
-    #ncol = 2,               # Set to 2 columns
-    byrow = TRUE,
-    override.aes = list(linetype = 0, shape = shapeVec) # Ensure fill shows correctly
-  ),
-  # shape = guide_legend(
-  #   ncol = 2                # Keep columns consistent across scales
-  # ),
-  color = guide_legend(
-    #ncol = 2,
-    override.aes = list(linetype = 0)
-  )
-)
-
 # gg <- gg + guides(
 #   fill = guide_legend(
-#     ncol = 2,               # Set to 2 columns
-#     byrow = TRUE, 
+#     #ncol = 2,               # Set to 2 columns
+#     byrow = TRUE,
 #     override.aes = list(linetype = 0, shape = shapeVec) # Ensure fill shows correctly
 #   ),
-#   shape = guide_legend(
-#     ncol = 2                # Keep columns consistent across scales
-#   ),
+#   # shape = guide_legend(
+#   #   ncol = 2                # Keep columns consistent across scales
+#   # ),
 #   color = guide_legend(
-#     ncol = 2,
+#     #ncol = 2,
 #     override.aes = list(linetype = 0)
 #   )
 # )
-# gg <- gg + theme(
-#   legend.position = c(0.8, 0.2), # Adjust coordinates to land in the empty facet
-#   legend.justification = c(0.6, 0.5)
-# )
+
+gg <- gg + guides(
+  fill = guide_legend(
+    ncol = 2,               # Set to 2 columns
+    byrow = TRUE,
+    override.aes = list(linetype = 0, shape = shapeVec) # Ensure fill shows correctly
+  ),
+  shape = guide_legend(
+    ncol = 2                # Keep columns consistent across scales
+  ),
+  color = guide_legend(
+    ncol = 2,
+    override.aes = list(linetype = 0)
+  )
+)
+gg <- gg + theme(
+  legend.position = c(0.8, 0.2), # Adjust coordinates to land in the empty facet
+  legend.justification = c(0.6, 0.5)
+)
 gg2 <- gg
 
 (gg1 / gg2) + 
@@ -579,6 +600,7 @@ gg2 <- gg
     )
   )
 
+  
 #=============================================================================
 
 
@@ -586,28 +608,93 @@ gg2 <- gg
 
 ```
 
-Alt text: Three scatterplots (Panels A-C) showing the relationship between the logarithm of the standard deviation and the logarithm of the mean for agricultural commodity prices. Each panel shows a positive linear trend, indicating that higher average levels are associated with higher volatility. Panels correspond to export prices, producer prices per hectare, and producer prices per kilogram.
+Alt text: Three scatterplots (Panels A-D) showing the relationship between the logarithm of the standard deviation and the logarithm of the mean for agricultural commodity prices and yields. Each panel shows a positive linear trend, indicating that higher average levels are associated with higher volatility. Panels correspond to export prices, producer prices per hectare, producer prices per kilogram, and yield.
 
 # Empirical evidence of fluctuation scaling in agricultural commodity markets
 
 To assess volatility scaling in agricultural commodity markets, the standard deviation and mean of global price series over 1961-2024, computed from FAO data [-@FAOSTAT2026], are plotted against each other in logs (Figure \ref{fig:riskReward}). The sample includes only commodities with complete, non-zero time series over the full period. Export prices are constructed as export values divided by export quantities, while producer prices are calculated per kilogram (Value of Agricultural Production divided by production) and per hectare (Value of Agricultural Production divided by area harvested).
 
-Comparisons of moments across time series are meaningful only if the series are stationary. To ensure stationarity, nominal values are deflated using the World Bank Manufacturers Unit Value Index [@WB_MUV_2026], such that the means are expressed in constant 2014-16 US dollars. Standard deviations are computed from the first-differenced price series. The slope, adjusted R-squared, and sample size are reported in each panel.
+Nominal values are deflated using the World Bank Manufacturers Unit Value Index [@WB_MUV_2026], such that the means—computed from level series—reflect average real price levels over the sample in constant 2014–16 US dollars. As many real price series remain non-stationary due to level shifts, standard deviations are computed from first-differenced real price series, which removes unit roots and eliminates deterministic trends, ensuring that reported volatility primarily reflects year-to-year price shocks rather than long-run level shifts.^[For commodities exhibiting structural breaks, the reported standard deviation reflects both year-to-year fluctuations and discrete changes associated with shifts between price regimes. Disentangling these components, and assessing their relative contributions, is left for future work. In most series, such shifts are infrequent, typically contributing one or two outliers to the differenced data.]
+
+The slope, adjusted R-squared, and sample size are reported in each panel. The plots reveal a strong correspondence (Adj. R-squared $\in (0.66, 0.82)$) between level and volatility across a wide range of commodity types, including crop, animal, food, non-food, raw, and processed commodities. The estimated slopes are close to unity, indicating proportionality between level and volatility ($\sigma \propto \mu$) across commodities. The pattern holds across export prices and both per-kilogram and per-hectare producer prices, suggesting that the relationship is not sensitive to the method of price construction or choice of physical referent unit.
+<!-- Comparisons of moments across time series are meaningful only if the series are stationary. -->
 <!-- The means of yield series (panel D), however, should be interpreted with great caution, since multi-decade yield series are generally not stationary (and cannot be "deflated"), such that the observed relation may be an artifact of secular trends. Panel D is included to motivate further clarification of this issue. -->
 <!--  Export prices are computed as deflated export values divided by export quantities. Producer prices per kilogram are calculated as the FAO Value of Agricultural Production divided by production. Producer prices per hectare are calculated as Value of Agricultural production divided by area harvested. It is included in the presentation to motivate further clarification of the matter. -->
-
-The plots reveal a strong correspondence (Adj. R-squared $\in (0.66, 0.82)$) between level and volatility across a wide range of commodity types, including crop, animal, food, non-food, raw, and processed commodities. The estimated slopes are close to unity, indicating proportionality between level and volatility ($\sigma \propto \mu$) across commodities. The pattern holds across export prices and both per-kilogram and per-hectare producer prices, suggesting that the relationship is not sensitive to the method of price construction or choice of physical referent unit.
 <!-- Global FAO yield series were also found to exhibit fluctuation scaling, but were omitted from the study since multi-decade yield series are generally not stationary (and cannot be "deflated"), such that the observed relation may be an artifact of secular trends. -->
 
-As in many complex systems exhibiting fluctuation scaling, the mechanism underlying the observed regularity is not readily apparent. Fluctuation scaling in environmental variables—such as the rainfall scaling documented by Tippett and Cohen [-@tippett2020seasonality]—may constitute one ingredient of a candidate explanation. More generally, the search for domain-independent explanations of fluctuation scaling, not tied to any specific empirical context, is an active area of research [@cohen2015random; @brown2021taylor; @taylor2019taylor]. A simpler...If the price series are lognormal, and percentage shocks are equivalent across commodities-such that the standard deviation of the logged series is constant across commodities-then the observed regularity follows as a trivial consequence $Var[x] = E[x]^2 (e^{s^2} - 1)$. To check, a Shapiro test of the logged price series rejects normality, and the variance of logged series varies substantially across commodities.
 
-
-In the following section, I contribute a further ingredient of potentially domain-independent character: under the standard assumption of homogeneous production technology, the sensitivity of production to input disturbances scales proportionally with output level.
+<!-- In the following section, I contribute a further ingredient of potentially domain-independent character: under the standard assumption of homogeneous production technology, the sensitivity of production to input disturbances scales proportionally with output level. -->
 <!-- As in many complex systems exhibiting such behavior, the mechanism behind the observed regularity is not readily apparent. Tippett and Cohen [-@tippett2020seasonality] document fluctuation scaling in Indian rainfall, suggesting that meteorological disturbances may exhibit scaling properties that propagate through to commodity markets. The search for explanations that do not depend on the details of any particular empirical setting is an active area of research [@cohen2015random; @brown2021taylor; @taylor2019taylor]. The following section presents a simple argument showing that proportional scaling between output level and sensitivity to exogenous disturbances arises as a natural consequence of homogeneous production technology. -->
 <!-- As mentioned above, relationships of this kind are characteristic of fluctuation scaling patterns observed in many complex systems. -->
 <!-- Notably, the scaling relation appears consistently across commodities with markedly different biological, technological, and market characteristics. -->
+```{r Fig2, fig.show = "hold", fig.width = 5, fig.height=3, fig.align="center", fig.cap="\\label{fig:stableS}Log-level plots of standard deviations and means for logged (A) world export prices, (B) world producer prices per hectare, (C) world producer prices per kg, and (D) yield (kg/hectare), 1961–2024, based on FAO data (FAO, 2026). Standard deviations are computed from first-differenced logged series. Nominal dollar values are deflated to constant 2014–2016 USD using the World Bank MUV Index (World Bank, 2026).", echo = FALSE, warning=FALSE, message=FALSE}
 
-# A theoretical basis for fluctuation scaling at farm level
+getFlatSlope <- function(thisDf){
+  dfMod <- thisDf %>% select(mlPrice, slPrice)
+  mod <- lm(log(slPrice)~., dfMod)
+  #summary(mod)
+  b <- round(mod$coefficients[1], 2)
+  m <- round(mod$coefficients[2], 2)
+  #plot(mod$fitted.values, mod$residuals)
+  #lmtest::bptest(mod)
+  dfOut <- as.data.frame(broom::glance(mod))
+  adjR2 <- round(dfOut$adj.r.squared, 2)
+  N <- df.residual(mod)
+  outVec <- c(slope = m, yInt = b, adjR2 = adjR2, N = N)
+  return(outVec)
+}
+
+#=============================================================================
+
+dfPlot3 <- do.call(rbind, list(dfRRkg, dfRRha, dfRRyd, dfRRexp)) %>% as.data.frame()
+
+# dfResults <- dfPlot3 %>%
+#   group_by(facetKey) %>%
+#   group_modify(~ {
+#     # .x is the data for the current group
+#     res <- getFlatSlope(.x)
+#     as.data.frame(t(res))
+#   }) %>%
+#   ungroup()
+# m <- outVec[1]; b <- outVec[2]; adjR2 <- outVec[3]; N <- outVec[4];
+# dfKgPrice <- dfRiskReward
+# thisFacet <- paste0("N = ", N, " agricultural commodities", "\nAdj. R-squared = ", adjR2, ", Slope = ", m, ", Y intercept = ", b)
+# dfPlot3$facetKey <- paste0(dfPlot3$facetKey, "\n", thisFacet)
+
+ggHskedast <- ggplot(dfPlot3, aes(x = mlPrice, y = log(slPrice))) +
+  geom_smooth(aes(group = NULL, fill = NULL, shape = NULL), method = lm, se = F) +
+  geom_point(size = 0.5) + facet_wrap(~facetKey, scales = "free_x", ncol = 2) +
+  labs(x = "Mean of logged series", y = "Nat. log of standard deviation of logged series") +
+  theme_bw() +
+  theme(axis.title = element_text(size = axisTitleSize),
+                 axis.text = element_text(size = 6),
+                 strip.background = element_rect(fill = "white"),
+                 strip.text = element_text(hjust = 0, size = 6))
+ggHskedast
+
+```
+
+# Discussion
+
+As in many systems exhibiting fluctuation scaling, the mechanism underlying the observed regularity is not readily apparent. Considering that, for a lognormal variable $x$, $\text{Var}[x] = \mathbb{E}[x]^2 (e^{s^2} - 1)$, where $s = \text{sd}(\log x)$, then varying $\mathbb{E}[\ln(x)]$ but approximately constant $s$ (or constant logged $s$), would produce the proportionality between level and variability documented above. The price series in this study are at least partially consistent with this candidate explanation. The means of the logged series vary across commodities, while the respective logged standard deviations are concentrated around a stable characteristic value that does not systematically depend on the mean (Figure 2). Note that this implies roughly constant percentage fluctuations across commodities, consistent with multiplicative rather than additive shocks. While a Shapiro–Wilk test rejects lognormality for many series, this appears in part to reflect level shifts over the sample period; lognormality may nevertheless provide a reasonable local approximation. The estimated fluctuation in Figure 1 is $\text{sd}(\Delta P)$, not $\text{sd}(P)$; but if changes take the form $\Delta P_t = P_{t-1}\varepsilon_t$, then the variability of price changes inherits the same dependence on $\mathbb{E}[P]$, so that, for the purposes of fluctuation scaling, the observed relationship in first differences reflects the same underlying scale dependence as in levels.
+
+The same may be said for the yield series, but the substantial divergence from unity of the exponent in this case makes it a weaker candidate explanation than for price.
+In the case of yield, a complementary perspective arises from production theory. Under standard assumptions of homogeneous production technology, the sensitivity of output to input disturbances scales proportionally with output level (see Supporting Information), implying that higher-output systems respond more strongly, in absolute terms, to comparable shocks. This suggests that highly optimized production regimes—characteristic of commercial agriculture—may also be intrinsically more fragile.
+
+At the same time, fluctuation scaling has been documented in environmental variables, including rainfall [@tippett2020seasonality], raising the possibility that scale-dependent disturbances originate in meteorological processes and propagate through production systems. Taken together, these observations are consistent with a chain of scale-dependent effects linking environmental variability, production responses, and ultimately market outcomes.
+
+More broadly, the search for domain-independent explanations of fluctuation scaling remains an active area of research [@cohen2015random; @brown2021taylor; @taylor2019taylor]. The considerations outlined here are best viewed not as a unified account, but as a set of partial insights and potential avenues for further investigation.
+
+
+[-@tippett2020seasonality]
+
+
+
+
+
+# Supporting Information
+
+## A theoretical basis for fluctuation scaling at farm level
 <!-- a yield level-stability tradeoff -->
 
 At the farm level, a simple theoretical argument implies a tradeoff between yield level and yield stability.
