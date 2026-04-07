@@ -32,7 +32,7 @@ journal:
   first-page: 1
 
 abstract: |
-  Fluctuation scaling—the power-law relation between the variance and mean of a variable—has been documented in diverse systems including ecology, physics, finance, and meteorology. This brief report presents empirical evidence of fluctuation scaling in agricultural commodity markets, a domain in which it has not previously been documented, using long-run global data from FAO. A complementary theoretical argument shows that homogeneous production technology implies proportional scaling between output and sensitivity to shocks, which may partially explain this pattern. Domain-independent and domain-specific implications are briefly discussed. In particular, the results suggest that efforts to simultaneously raise incomes and improve stability for smallholder producers may face a structural tension rooted in scale-dependent dynamics.
+  Fluctuation scaling—the power-law relation between the variance and mean of a variable—has been documented in diverse systems including ecology, physics, finance, and meteorology. This brief report presents empirical evidence of fluctuation scaling in agricultural commodity markets, a domain in which it has not previously been documented, using long-run global data from FAO. Simple statistical and structural considerations suggest possible explanations for the observed relationship. Domain-independent and domain-specific implications are briefly discussed. In particular, the results suggest that efforts to simultaneously raise incomes and improve stability for smallholder producers may face a structural tension rooted in scale-dependent dynamics.
 
 keywords:
   - Agricultural risk
@@ -49,7 +49,7 @@ header-includes:
   #- \graphicspath{{Fig/}}
   # 
 ---
-
+<!-- Fluctuation scaling—the power-law relation between the variance and mean of a variable—has been documented in diverse systems including ecology, physics, finance, and meteorology. This brief report presents empirical evidence of fluctuation scaling in agricultural commodity markets, a domain in which it has not previously been documented, using long-run global data from FAO. A complementary theoretical argument shows that homogeneous production technology implies proportional scaling between output and sensitivity to shocks, which may partially explain this pattern. Domain-independent and domain-specific implications are briefly discussed. In particular, the results suggest that efforts to simultaneously raise incomes and improve stability for smallholder producers may face a structural tension rooted in scale-dependent dynamics. -->
 <!-- The results suggest that agricultural markets obey the same scaling principles found in many complex systems. Some of the domain-independent and domain-specific implications of these findings are briefly discussed. -->
 <!-- The results suggest that agricultural markets obey the same scaling principles found in many complex systems, and that the tension between productivity growth and stability may be structural rather than a matter of policy design. -->
 <!-- "On the Scaling of Volatility with Level in Agricultural Commodity Prices and Yields" -->
@@ -210,11 +210,16 @@ return(outVec)
 
 Many complex systems exhibit simple statistical regularities that persist across diverse domains. One such regularity is fluctuation scaling, in which the variance of a variable scales as a power of its mean, implying that higher levels are systematically associated with greater volatility [@eisler2008fluctuation; @taylor1961aggregation]. This pattern, often referred to as Taylor’s law, has been observed in settings ranging from ecological populations to physical processes, meteorological phenomena, and financial activity, suggesting that common mechanisms may operate across otherwise unrelated systems [@eisler2008fluctuation; @tippett2020seasonality].
 
-In this brief report, I present evidence of fluctuation scaling in agricultural commodity markets using long-run global FAO data, documenting a robust positive association between price level and volatility across a wide range of commodity types. I then present a simple theoretical argument showing that, under the standard assumption of homogeneous production technology, the sensitivity of output to input perturbations scales proportionally with output level. Taken together with evidence of fluctuation scaling in meteorological processes [@tippett2020seasonality], these results suggest a tentative basis for a mechanism linking environmental variability to the observed scaling behavior in commodity markets.
+In this brief report, I present evidence of fluctuation scaling in agricultural commodity markets based on long-run global FAO data, documenting a robust positive association between level and volatility across a wide range of commodity prices and yields. I then present complementary statistical and structural considerations of a general nature that may at least partially explain this pattern.
+
+The report concludes with brief remarks on the domain-independent and domain-specific implications of these empirical and theoretical results. Particular attention is given to agricultural research for development (AR4D)—the motivating context of the present work—which increasingly seeks to promote both higher productivity and greater stability for smallholder producers [@conway2007doubly; @altieri2015agroecology; @mockshell2018beyond]. The scaling relationships documented here suggest that these objectives may be intrinsically offsetting as a consequence of general scale-dependent dynamics that transcend agricultural economics (or any other particular research domain). If so, the associated reward–stability tradeoff lies outside the purview of AR4D policy design, instead posing a fundamental constraint that policy must accommodate.
+
+<!-- that tradeoffs between reward and stability may arise as a consequence of general scaling relationships rather than features specific to particular crops, technologies, or policies. -->
+<!-- These include a statistical interpretation based on approximately constant dispersion in log prices, implying proportional (percentage) fluctuations; a structural argument showing that homogeneous production technology generates scale-dependent sensitivity of output to disturbances; and the possibility that fluctuation scaling in environmental variables propagates through production systems to markets. -->
+<!-- I then present a simple theoretical argument showing that, under the standard assumption of homogeneous production technology, the sensitivity of output to input perturbations scales proportionally with output level. Taken together with evidence of fluctuation scaling in meteorological processes [@tippett2020seasonality], these results suggest a tentative basis for a mechanism linking environmental variability to the observed scaling behavior in commodity markets. -->
 <!-- providing a simple theoretical mechanism that may partially explain -->
 <!-- Taken together with evidence of fluctuation scaling in meteorological processes [@tippett2020seasonality], these results suggest the possibility of linked scale-dependent dynamics spanning environmental, output, and market variability, a possibility explored further in the Discussion. -->
 
-The report concludes with brief remarks on the domain-independent and domain-specific implications of these empirical and theoretical results. Particular attention is given to agricultural research for development (AR4D)—the motivating context of the present work—which increasingly seeks to promote both higher productivity and greater stability for smallholder producers [@conway2007doubly; @altieri2015agroecology; @mockshell2018beyond]. The scaling relationships documented here suggest that these objectives may reflect a structural tension rooted in scale-dependent dynamics, and may therefore require policy design to accommodate a reward-stability tradeoff.
 <!-- I present empirical evidence that agricultural commodity markets exhibit similar scaling behavior. Using long-run global data, -->
 <!-- If higher levels of output or price are systematically associated with greater variability, then tradeoffs between reward and stability may arise as a consequence of general scaling relationships rather than features specific to particular crops, technologies, or policies. -->
 
@@ -450,19 +455,19 @@ df <- dfAreaProd %>% merge(dfVAP, by = c("Item", "year")) %>%
 #----------------------------------------------------------------------------
 #nrow(df)
 #df %>% group_by(Item) %>% mutate(nYrs = sum(!is.na(kgPrice))) %>% subset(nYrs >60) %>% nrow()
-dfTest <- df %>% group_by(Item) %>% mutate(shapiro_p = shapiro.test(scale(log(kgPrice)))$p.value) %>%
-  ungroup() %>% subset(year == 2024) %>% select(Item, shapiro_p)
-nShapiroKg <- dfTest %>% subset(shapiro_p >= 0.05) %>% nrow
-pctShapKg <- nShapiroKg / (dfTest %>% nrow) * 100
-logNormItemsKg <- dfTest$Item[which(dfTest$shapiro_p >= 0.05)]
-failedKg <- dfTest$Item[which(dfTest$shapiro_p < 0.05)]
-dfTest <- df %>% group_by(Item) %>% mutate(nYrs = sum(!is.na(haPrice))) %>% subset(nYrs >60) %>% mutate(shapiro_p = shapiro.test(log(haPrice))$p.value) %>%
-  ungroup() %>% subset(year == 2024) %>% select(Item, shapiro_p)
-nShapiroHa <- dfTest %>% subset(shapiro_p >= 0.05) %>% nrow
-pctShapHa <- nShapiroHa / (dfTest %>% nrow) * 100
-logNormItemsHa <- dfTest$Item[which(dfTest$shapiro_p >= 0.05)]
-failedHa <- dfTest$Item[which(dfTest$shapiro_p < 0.05)]
-thisPriceVec <- df %>% subset(Item == "Roots and Tubers, Total") %>% mutate(lKgPrice = log(kgPrice)) %>% .$lKgPrice
+# dfTest <- df %>% group_by(Item) %>% mutate(shapiro_p = shapiro.test(scale(log(kgPrice)))$p.value) %>%
+#   ungroup() %>% subset(year == 2024) %>% select(Item, shapiro_p)
+# nShapiroKg <- dfTest %>% subset(shapiro_p >= 0.05) %>% nrow
+# pctShapKg <- nShapiroKg / (dfTest %>% nrow) * 100
+# logNormItemsKg <- dfTest$Item[which(dfTest$shapiro_p >= 0.05)]
+# failedKg <- dfTest$Item[which(dfTest$shapiro_p < 0.05)]
+# dfTest <- df %>% group_by(Item) %>% mutate(nYrs = sum(!is.na(haPrice))) %>% subset(nYrs >60) %>% mutate(shapiro_p = shapiro.test(log(haPrice))$p.value) %>%
+#   ungroup() %>% subset(year == 2024) %>% select(Item, shapiro_p)
+# nShapiroHa <- dfTest %>% subset(shapiro_p >= 0.05) %>% nrow
+# pctShapHa <- nShapiroHa / (dfTest %>% nrow) * 100
+# logNormItemsHa <- dfTest$Item[which(dfTest$shapiro_p >= 0.05)]
+# failedHa <- dfTest$Item[which(dfTest$shapiro_p < 0.05)]
+# thisPriceVec <- df %>% subset(Item == "Roots and Tubers, Total") %>% mutate(lKgPrice = log(kgPrice)) %>% .$lKgPrice
 # # Plot the points
 # qqnorm(thisPriceVec, main = "Q-Q Plot for log price")
 # # Add the reference line (crucial for interpretation!)
@@ -520,7 +525,7 @@ dfHa <- df %>% rename(priceSeries = haPrice)
 dfRiskReward <- processRiskRewardDf(dfHa)
 #dfRiskReward %>% subset(group == "Other") %>% .$Item
 dfRiskReward <- dfRiskReward %>% subset(group != "Other")
-dfRRha <- dfRiskReward; dfRRha$facetKey <- "B) Producer price (constant 2014-16 USD/hectare)"
+dfRRha <- dfRiskReward; dfRRha$facetKey <- "B) Producer price (constant 2014-16 USD/ha)"
 #----------------------------------------------------------------------------
 # Get slope and intercept of the risk reward relationship
 outVec <- getSlopeEtc(dfRiskReward)
@@ -608,15 +613,15 @@ gg2 <- gg
 
 ```
 
-Alt text: Three scatterplots (Panels A-D) showing the relationship between the logarithm of the standard deviation and the logarithm of the mean for agricultural commodity prices and yields. Each panel shows a positive linear trend, indicating that higher average levels are associated with higher volatility. Panels correspond to export prices, producer prices per hectare, producer prices per kilogram, and yield.
+Alt text: Four scatterplots (Panels A-D) showing the relationship between the logarithm of the standard deviation and the logarithm of the mean for agricultural commodity prices and yields. Each panel shows a positive linear trend, indicating that higher average levels are associated with higher volatility. Panels correspond to export prices, producer prices per hectare, producer prices per kilogram, and yields.
 
 # Empirical evidence of fluctuation scaling in agricultural commodity markets
 
-To assess volatility scaling in agricultural commodity markets, the standard deviation and mean of global price series over 1961-2024, computed from FAO data [-@FAOSTAT2026], are plotted against each other in logs (Figure \ref{fig:riskReward}). The sample includes only commodities with complete, non-zero time series over the full period. Export prices are constructed as export values divided by export quantities, while producer prices are calculated per kilogram (Value of Agricultural Production divided by production) and per hectare (Value of Agricultural Production divided by area harvested).
+To assess volatility scaling in agricultural commodity markets, the standard deviation and mean of global price and yield series over 1961–2024, computed from FAO data [-@FAOSTAT2026], are plotted against each other on log–log axes (Figure \ref{fig:riskReward}). The sample includes only commodities with complete, non-zero time series over the full period. Export prices are constructed as export values divided by export quantities, while producer prices are calculated per kilogram (Value of Agricultural Production divided by production) and per hectare (Value of Agricultural Production divided by area harvested).
 
-Nominal values are deflated using the World Bank Manufacturers Unit Value Index [@WB_MUV_2026], such that the means—computed from level series—reflect average real price levels over the sample in constant 2014–16 US dollars. As many real price series remain non-stationary due to level shifts, standard deviations are computed from first-differenced real price series, which removes unit roots and eliminates deterministic trends, ensuring that reported volatility primarily reflects year-to-year price shocks rather than long-run level shifts.^[For commodities exhibiting structural breaks, the reported standard deviation reflects both year-to-year fluctuations and discrete changes associated with shifts between price regimes. Disentangling these components, and assessing their relative contributions, is left for future work. In most series, such shifts are infrequent, typically contributing one or two outliers to the differenced data.]
+Nominal dollar values are deflated using the World Bank Manufacturers Unit Value Index [@WB_MUV_2026], such that the means—computed from level series—reflect average real price levels over the sample in constant 2014–16 US dollars. As many real price series remain non-stationary due to level shifts, standard deviations are computed from first-differenced series, which removes unit roots and reduces the influence of deterministic trends, ensuring that reported volatility primarily reflects year-to-year shocks rather than long-run level shifts.^[For commodities exhibiting structural breaks, the reported standard deviation reflects both year-to-year fluctuations and discrete changes associated with shifts between price regimes. Disentangling these components, and assessing their relative contributions, is left for future work. In most series, such shifts are infrequent, typically contributing one or two outliers to the differenced data.] While non-stationarity in price series primarily reflects level shifts, yield series typically exhibit secular trends. In both cases, first differencing isolates short-run fluctuations for the purpose of comparing volatility across commodities.
 
-The slope, adjusted R-squared, and sample size are reported in each panel. The plots reveal a strong correspondence (Adj. R-squared $\in (0.66, 0.82)$) between level and volatility across a wide range of commodity types, including crop, animal, food, non-food, raw, and processed commodities. The estimated slopes are close to unity, indicating proportionality between level and volatility ($\sigma \propto \mu$) across commodities. The pattern holds across export prices and both per-kilogram and per-hectare producer prices, suggesting that the relationship is not sensitive to the method of price construction or choice of physical referent unit.
+The slope, adjusted $R^2$, and sample size are reported in each panel. The plots reveal a strong scaling relationship (adj. $R^2 \in (0.66, 0.82)$) between level and volatility across a wide range of commodity types, including crop, animal, food, non-food, raw, and processed commodities. For prices (panels A-C), the estimated slopes are close to unity, indicating proportionality between level and volatility ($\sigma \propto \mu$) across commodities. The pattern holds across export prices and both per-kilogram and per-hectare producer prices, suggesting that the relationship is not sensitive to the method of price construction or choice of physical referent unit. Yields (panel D) also exhibit the regularity, although the estimated slope is considerably less than unity.
 <!-- Comparisons of moments across time series are meaningful only if the series are stationary. -->
 <!-- The means of yield series (panel D), however, should be interpreted with great caution, since multi-decade yield series are generally not stationary (and cannot be "deflated"), such that the observed relation may be an artifact of secular trends. Panel D is included to motivate further clarification of this issue. -->
 <!--  Export prices are computed as deflated export values divided by export quantities. Producer prices per kilogram are calculated as the FAO Value of Agricultural Production divided by production. Producer prices per hectare are calculated as Value of Agricultural production divided by area harvested. It is included in the presentation to motivate further clarification of the matter. -->
@@ -627,22 +632,23 @@ The slope, adjusted R-squared, and sample size are reported in each panel. The p
 <!-- As in many complex systems exhibiting such behavior, the mechanism behind the observed regularity is not readily apparent. Tippett and Cohen [-@tippett2020seasonality] document fluctuation scaling in Indian rainfall, suggesting that meteorological disturbances may exhibit scaling properties that propagate through to commodity markets. The search for explanations that do not depend on the details of any particular empirical setting is an active area of research [@cohen2015random; @brown2021taylor; @taylor2019taylor]. The following section presents a simple argument showing that proportional scaling between output level and sensitivity to exogenous disturbances arises as a natural consequence of homogeneous production technology. -->
 <!-- As mentioned above, relationships of this kind are characteristic of fluctuation scaling patterns observed in many complex systems. -->
 <!-- Notably, the scaling relation appears consistently across commodities with markedly different biological, technological, and market characteristics. -->
-```{r Fig2, fig.show = "hold", fig.width = 5, fig.height=3, fig.align="center", fig.cap="\\label{fig:stableS}Log-level plots of standard deviations and means for logged (A) world export prices, (B) world producer prices per hectare, (C) world producer prices per kg, and (D) yield (kg/hectare), 1961–2024, based on FAO data (FAO, 2026). Standard deviations are computed from first-differenced logged series. Nominal dollar values are deflated to constant 2014–2016 USD using the World Bank MUV Index (World Bank, 2026).", echo = FALSE, warning=FALSE, message=FALSE}
+<!-- $s = \mathrm{sd}(\log P)$ -->
+```{r Fig2, fig.show = "hold", fig.width = 5, fig.height=4, fig.align="center", fig.cap="\\label{fig:stableS}Mean–dispersion relationship in logged price and yield series. Log–level plots of the standard deviation against the mean of the logged series over 1961-2024 for (A) world export prices, (B) world producer prices per hectare, (C) world producer prices per kg, and (D) yield (kg per hectare). Data and construction as in Figure 1. The standard deviations cluster uniformly about a characteristic value with no systematic dependence on mean log price, consistent with approximately constant $s$ across commodities.", echo = FALSE, warning=FALSE, message=FALSE}
 
-getFlatSlope <- function(thisDf){
-  dfMod <- thisDf %>% select(mlPrice, slPrice)
-  mod <- lm(log(slPrice)~., dfMod)
-  #summary(mod)
-  b <- round(mod$coefficients[1], 2)
-  m <- round(mod$coefficients[2], 2)
-  #plot(mod$fitted.values, mod$residuals)
-  #lmtest::bptest(mod)
-  dfOut <- as.data.frame(broom::glance(mod))
-  adjR2 <- round(dfOut$adj.r.squared, 2)
-  N <- df.residual(mod)
-  outVec <- c(slope = m, yInt = b, adjR2 = adjR2, N = N)
-  return(outVec)
-}
+# getFlatSlope <- function(thisDf){
+#   dfMod <- thisDf %>% select(mlPrice, slPrice)
+#   mod <- lm(log(slPrice)~., dfMod)
+#   #summary(mod)
+#   b <- round(mod$coefficients[1], 2)
+#   m <- round(mod$coefficients[2], 2)
+#   #plot(mod$fitted.values, mod$residuals)
+#   #lmtest::bptest(mod)
+#   dfOut <- as.data.frame(broom::glance(mod))
+#   adjR2 <- round(dfOut$adj.r.squared, 2)
+#   N <- df.residual(mod)
+#   outVec <- c(slope = m, yInt = b, adjR2 = adjR2, N = N)
+#   return(outVec)
+# }
 
 #=============================================================================
 
@@ -664,7 +670,7 @@ dfPlot3 <- do.call(rbind, list(dfRRkg, dfRRha, dfRRyd, dfRRexp)) %>% as.data.fra
 ggHskedast <- ggplot(dfPlot3, aes(x = mlPrice, y = log(slPrice))) +
   geom_smooth(aes(group = NULL, fill = NULL, shape = NULL), method = lm, se = F) +
   geom_point(size = 0.5) + facet_wrap(~facetKey, scales = "free_x", ncol = 2) +
-  labs(x = "Mean of logged series", y = "Nat. log of standard deviation of logged series") +
+  labs(x = "Mean of logged series", y = "Standard deviation of logged series (log scale)") +
   theme_bw() +
   theme(axis.title = element_text(size = axisTitleSize),
                  axis.text = element_text(size = 6),
@@ -673,31 +679,48 @@ ggHskedast <- ggplot(dfPlot3, aes(x = mlPrice, y = log(slPrice))) +
 ggHskedast
 
 ```
+Alt text: Four scatterplots (panels A–D) show the relationship between the average of log-transformed values and their variability for agricultural data from 1961 to 2024. The panels correspond to world export prices, producer prices per hectare, producer prices per kilogram, and yields. Each point represents a commodity. Across all panels, the spread of points appears roughly constant along the horizontal axis, indicating that variability in logged price and yield series does not systematically increase or decrease with the average log level.
 
 # Discussion
 
-As in many systems exhibiting fluctuation scaling, the mechanism underlying the observed regularity is not readily apparent. Considering that, for a lognormal variable $x$, $\text{Var}[x] = \mathbb{E}[x]^2 (e^{s^2} - 1)$, where $s = \text{sd}(\log x)$, then varying $\mathbb{E}[\ln(x)]$ but approximately constant $s$ (or constant logged $s$), would produce the proportionality between level and variability documented above. The price series in this study are at least partially consistent with this candidate explanation. The means of the logged series vary across commodities, while the respective logged standard deviations are concentrated around a stable characteristic value that does not systematically depend on the mean (Figure 2). Note that this implies roughly constant percentage fluctuations across commodities, consistent with multiplicative rather than additive shocks. While a Shapiro–Wilk test rejects lognormality for many series, this appears in part to reflect level shifts over the sample period; lognormality may nevertheless provide a reasonable local approximation. The estimated fluctuation in Figure 1 is $\text{sd}(\Delta P)$, not $\text{sd}(P)$; but if changes take the form $\Delta P_t = P_{t-1}\varepsilon_t$, then the variability of price changes inherits the same dependence on $\mathbb{E}[P]$, so that, for the purposes of fluctuation scaling, the observed relationship in first differences reflects the same underlying scale dependence as in levels.
+As in many systems exhibiting fluctuation scaling, the mechanism underlying the observed regularity is not readily apparent. For a lognormal variable $x$, $\text{Var}[x] = \mathbb{E}[x]^2 (e^{s^2} - 1)$, where $s = \text{sd}(\log x)$. If $\mathbb{E}[\log x]$ varies while $s$ remains approximately constant, this relationship generates the proportionality between level and variability documented above. The price series in this study are at least partially consistent with this candidate explanation: mean log prices vary across commodities, while the corresponding standard deviations (plotted in log scale) are concentrated around a stable characteristic value that does not systematically depend on the mean (Figure \ref{fig:stableS}). This implies roughly constant percentage fluctuations across commodities, consistent with multiplicative rather than additive shocks, and thus consistent with common economic representations in which disturbances operate proportionally to scale (e.g., log-linear and multiplicative shock models). While a Shapiro–Wilk test rejects lognormality for many series, this appears in part to reflect level shifts over the sample period; lognormality may nevertheless provide a reasonable local approximation. The empirical measure in Figure 1 is $\text{sd}(\Delta P)$ rather than $\text{sd}(P)$; however, if changes take the form $\Delta P_t = P_{t-1}\varepsilon_t$, then the variability of price changes inherits the same dependence on $\mathbb{E}[P]$, so that, for the purposes of fluctuation scaling, the relationship observed in first differences reflects the same scale dependence as in levels.
 
-The same may be said for the yield series, but the substantial divergence from unity of the exponent in this case makes it a weaker candidate explanation than for price.
-In the case of yield, a complementary perspective arises from production theory. Under standard assumptions of homogeneous production technology, the sensitivity of output to input disturbances scales proportionally with output level (see Supporting Information), implying that higher-output systems respond more strongly, in absolute terms, to comparable shocks. This suggests that highly optimized production regimes—characteristic of commercial agriculture—may also be intrinsically more fragile.
+The same empirical pattern is present in the yield series, but the estimated exponent departs more substantially from unity, making the lognormal explanation less compelling in this case. Another factor potentially contributing to the observed regularity is fluctuation scaling in agroclimatic variables (e.g., as documented by Tippet and Cohen [-@tippett2020seasonality]). Moreover, it is straightforward to demonstrate that, under the standard assumption of homogeneous production technology, yield sensitivity to such fluctuations scales proportionally with yield level (see Supporting Information). To the extent that higher expected prices are associated with more tightly engineered and optimized production systems, this theoretical argument implies that yield sensitivity-and thus volatility-tends to increase with expected price.
 
-At the same time, fluctuation scaling has been documented in environmental variables, including rainfall [@tippett2020seasonality], raising the possibility that scale-dependent disturbances originate in meteorological processes and propagate through production systems. Taken together, these observations are consistent with a chain of scale-dependent effects linking environmental variability, production responses, and ultimately market outcomes.
+It may be that market level fluctuation scaling is linked to these farm level scale dependent effects.
 
 More broadly, the search for domain-independent explanations of fluctuation scaling remains an active area of research [@cohen2015random; @brown2021taylor; @taylor2019taylor]. The considerations outlined here are best viewed not as a unified account, but as a set of partial insights and potential avenues for further investigation.
 
+These results are based on world-level aggregates. Future work may examine the extent to which these regularities persist under geographical disaggregation, where deviations or slope heterogeneity may offer additional insights.
+<!-- As in many systems exhibiting fluctuation scaling, the mechanism underlying the observed regularity is not readily apparent. Considering that, for a lognormal variable $x$, $\text{Var}[x] = \mathbb{E}[x]^2 (e^{s^2} - 1)$, where $s = \text{sd}(\log x)$, then varying $\mathbb{E}[\ln(x)]$ but approximately constant $s$ (or constant logged $s$), would produce the proportionality between level and variability documented above. The price series in this study are at least partially consistent with this candidate explanation. The means of the logged series vary across commodities, while the respective (logged) standard deviations are concentrated around a stable characteristic value that does not systematically depend on the mean (Figure 2). Note that this implies roughly constant percentage fluctuations across commodities, consistent with multiplicative rather than additive shocks. While a Shapiro–Wilk test rejects lognormality for many series, this appears in part to reflect level shifts over the sample period; lognormality may nevertheless provide a reasonable local approximation. The estimated fluctuation in Figure 1 is $\text{sd}(\Delta P)$, not $\text{sd}(P)$; but if changes take the form $\Delta P_t = P_{t-1}\varepsilon_t$, then the variability of price changes inherits the same dependence on $\mathbb{E}[P]$, so that, for the purposes of fluctuation scaling, the observed relationship in first differences reflects the same underlying scale dependence as in levels. -->
+<!-- implying that higher-output systems respond more strongly, in absolute terms, to comparable shocks. This  -->
 
-[-@tippett2020seasonality]
+# Conclusion
 
+The empirical regularity in panels A-D of Figure \ref{fig:riskReward} indicates that long-run agricultural commodity price and yield volatility scales with level. The mechanism underlying this relationship remains unclear. The evidence is consistent with several complementary considerations: approximately constant dispersion in log prices implies proportional (percentage) fluctuations, a pattern consistent with multiplicative shocks; homogeneous production technology implies scale-dependent sensitivity of output to disturbances; and fluctuation scaling in environmental variables suggests that such scale-dependent disturbances may propagate through production systems to markets.
 
+From a domain-independent perspective, these results extend a widely observed fluctuation-scaling regularity to a novel empirical setting in which potential underlying mechanisms can be explored. Scale-dependent yield sensitivity to fluctuations (demonstrated in the Supporting Information) is not tied to agricultural economics or any particular empirical setting, but rather arises from the homogeneity of the functional form. Because homogeneity is a structural property that arises in many systems, similar scaling relationships may emerge across diverse biological, physical, and economic contexts. Fluctuation scaling in commodity prices and yields may reflect general structural properties shared across otherwise unrelated systems, rather than features unique to agricultural economics.
 
+From an AR4D policy perspective, the results suggest that efforts to increase farmer reward (i.e., higher productivity and integration into higher-value commodity markets) systematically entail reduced stability, in the form of greater exposure to yield and price risk. The structural and domain-independent nature of this reward–stability tradeoff bears emphasis: it does not arise from, nor can it be removed by, policy design, but instead represents a fundamental constraint that policy must address. This underscores the importance of ex ante evaluation of risk bearing capacity in target populations and production environments, and of risk-mitigating mechanisms-e.g., microfinance, institutional and contractual arrangements, collective risk-pooling mechanisms (and related forms of social capital), and, increasingly, technology enhanced solutions ("AgTech")-as central components rather than peripheral complements to farm yield- and income-enhancing strategies. Contemporary AR4D frameworks (e.g., "Agricultural Innovation Systems" [@sandlin2014agricultural] and "Blended Sustainability" [@mockshell2018beyond]) are already conceptually oriented in this direction. The empirical and theoretical arguments presented here provide quantitative grounding for operationalizing this vision.
 
+<!-- Policies aiming for productivity growth may therefore benefit from explicit assessment of how volatility scales with expected returns, together with an  -->
+<!-- The empirical and theoretical results presented above should be clearly distinguished. The theoretical argument demonstrates that yield sensitivity to stochastic disturbances (e.g., rainfall deviations) necessarily scales with yield level under standard assumptions. Farm-level yield volatility can therefore be thought of as reflecting both exogenous stochastic shocks and an endogenous scale-dependent response of output to those shocks. -->
+
+<!-- The empirical regularity in panels A-C of Figure \ref{fig:riskReward}, by contrast, indicates that long-run agricultural commodity price volatility scales with price level, although the mechanism underlying this relationship remains unclear.^[The empirical results are based on world-level aggregates. Future work may examine the extent to which these regularities persist under geographical disaggregation, where deviations or slope heterogeneity may offer additional insights.] One possibility is that the observed scaling might arise from scale-dependent meteorological, agronomic, or market disturbances, scale-dependent price responses to these disturbances, or some combination thereof. More specifically, the empirical regularity and theoretical argument taken together are consistent with a chain of scale-dependent processes at farm level: meteorological disturbances exhibit fluctuation scaling [@tippett2020seasonality], higher-yield production regimes are more sensitive to such disturbances (as demonstrated above), and these effects may propagate through markets to commodity prices. -->
+
+<!-- However, no direct causal link between farm-level yield volatility scaling and price volatility scaling is asserted here. While the empirical and theoretical results are consistent with the possibility that both reflect a common scaling mechanism, this interpretation remains tentative; and establishing such a connection rigorously is left for future work. -->
+
+:::{#refs}
+:::
+
+\pagebreak
 
 # Supporting Information
 
-## A theoretical basis for fluctuation scaling at farm level
-<!-- a yield level-stability tradeoff -->
+## A yield level-stability tradeoff
+<!--A theoretical basis for fluctuation scaling at farm level-->
 
-At the farm level, a simple theoretical argument implies a tradeoff between yield level and yield stability.
+A simple theoretical argument implies a tradeoff between yield level and yield stability at the farm level.
 
 Under the standard assumption that yield $y(\mathbf{x})$ is a homogeneous function of inputs $\mathbf{x}$ of degree $h$, Euler’s theorem implies
 
@@ -759,18 +782,6 @@ In economic terms, higher-yield production regimes are inherently more sensitive
 <!-- This result does not depend on the particular domain of application, but follows from the homogeneity of the functional form used. -->
 <!-- Because homogeneity is a structural property that arises in many systems, similar scaling relationships may emerge across diverse biological, physical, and economic contexts. In domain-independent terms, homogeneous processes exhibit scale-dependent sensitivity to perturbations, which in the present context manifests as a tradeoff between production level and stability. -->
 
-# Discussion and conclusion
-
-The empirical and theoretical results presented above should be clearly distinguished. The theoretical argument demonstrates that yield sensitivity to stochastic disturbances (e.g., rainfall deviations) necessarily scales with yield level under standard assumptions. Farm-level yield volatility can therefore be thought of as reflecting both exogenous stochastic shocks and an endogenous scale-dependent response of output to those shocks.
-
-The empirical regularity in panels A-C of Figure \ref{fig:riskReward}, by contrast, indicates that long-run agricultural commodity price volatility scales with price level, although the mechanism underlying this relationship remains unclear.^[The empirical results are based on world-level aggregates. Future work may examine the extent to which these regularities persist under geographical disaggregation, where deviations or slope heterogeneity may offer additional insights.] One possibility is that the observed scaling might arise from scale-dependent meteorological, agronomic, or market disturbances, scale-dependent price responses to these disturbances, or some combination thereof. More specifically, the empirical regularity and theoretical argument taken together are consistent with a chain of scale-dependent processes at farm level: meteorological disturbances exhibit fluctuation scaling [@tippett2020seasonality], higher-yield production regimes are more sensitive to such disturbances (as demonstrated above), and these effects may propagate through markets to commodity prices.
-
-However, no direct causal link between farm-level yield volatility scaling and price volatility scaling is asserted here. While the empirical and theoretical results are consistent with the possibility that both reflect a common scaling mechanism, this interpretation remains tentative; and establishing such a connection rigorously is left for future work.
-
-From a domain-independent perspective, these results extend a widely observed fluctuation-scaling regularity to a novel empirical setting in which the underlying mechanism can be examined explicitly. The theoretical result does not depend on the particular research setting, but follows from the homogeneity of the functional form. Because homogeneity is a structural property that arises in many systems, similar scaling relationships may emerge across diverse biological, physical, and economic contexts. If this interpretation is correct, fluctuation scaling in commodity prices and yields may reflect general structural properties shared across otherwise unrelated systems, rather than features unique to agricultural economics.
-
-From an AR4D policy perspective, the results suggest that efforts to increase farm yield and income may not be separable from considerations of stability. If volatility scales with level, then productivity growth can be accompanied by systematically greater exposure to risk. This underscores the importance of risk-mitigating mechanisms---including financial instruments, institutional arrangements, social capital, and cooperative risk-sharing structures---as central components rather than peripheral complements to yield- and income-enhancing strategies. Policies aiming for productivity growth may therefore benefit from explicit assessment of how volatility scales with expected returns, together with an evaluation of risk-bearing capacity within target populations and production environments. Contemporary AR4D frameworks (e.g., "Agricultural Innovation Systems" [@sandlin2014agricultural] and "Blended Sustainability" [@mockshell2018beyond]) are already conceptually oriented in this direction; and the empirical and theoretical findings presented here provide quantitative support for making such considerations operational.
-
 <!-- Productivity and volatility appear intrinsically linked through scale-dependent mechanisms, implying that interventions aiming for higher returns must simultaneously increase exposure to risk. -->
 <!-- If higher levels of output or price are systematically associated with greater variability, then tradeoffs between reward and stability may arise as a consequence of general scaling relationships rather than features specific to particular crops, technologies, or policies. -->
 <!-- The evidence presented here indicates that agricultural commodity markets exhibit fluctuation scaling of the same form observed in many complex systems.  If so, the patterns documented here would represent another instance of a statistical regularity that spans biological, physical, and economic systems. Although this interpretation remains tentative, it points to the possibility that common mechanisms underlie fluctuation scaling across disciplines and that agricultural data provide a new empirical setting in which these mechanisms can be studied. -->
@@ -785,4 +796,3 @@ From an AR4D policy perspective, the results suggest that efforts to increase fa
 <!-- The empirical regularity and theoretical argument outlined above indicate that agricultural yield and price volatility are not due to random exogenous shocks alone, but rather arise in a partly deterministic/endogenous/mechanical [which word to use?] manner from scale-dependent sensitivity to random shocks---resulting in the observed reward-stability tradeoff. It is important to keep in mind that the empirical findings are world level. A more refined analysis can examine to what degree the regularity persists or whether anything interesting happens (e.g. changing slope) under geographical disaggregation. -->
 <!-- For AR4D policy purposes, this means that the pursuit of increased yields and smallholder exposure to high value commodity markets may work against the simultaneous pursuit of higher yield stability and overall smallholder resilience. AR4D yield enhancement strategy should thus start from a careful assessment of the risk capital available in target populations and environments; and complement yield enhancing technology and practices accordingly with the development of appropriate risk mitigating mechanisms (e.g. microfinance, subsidies, insurance, cooperative social mechanisms). Modern AR4D frameworks emphasizing both higher yields and higher stability such as the "Agricultural Innovation Systems" framework [@sandlin2014agricultural; @klerkx2010adaptive] or the "Blended Sustainability" vision [@mockshell2018beyond] can thus take a more grounded, informed approach. -->
 <!-- Above I document an empirical tradeoff between stability and reward in world commodity markets, and demonstrate theoretically that, at farm level, yield volatility scales with yield level under standard microeconomic assumptions regarding homogeneity and concavity. This strongly -->
-
