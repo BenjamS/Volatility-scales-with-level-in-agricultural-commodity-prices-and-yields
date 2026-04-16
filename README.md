@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19615498.svg)](https://doi.org/10.5281/zenodo.19615498)
 # Reproduction Package: Fluctuation scaling in agricultural commodity markets
 This repository contains the data and code required to reproduce the empirical findings and figures presented in the Brief Report: **"Fluctuation scaling in agricultural commodity markets"** by Benjamin Schiek (PNAS Nexus, 2026).
 ## Contents
